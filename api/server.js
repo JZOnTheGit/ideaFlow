@@ -7,15 +7,20 @@ const router = Router();
 
 // Cors headers
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://ideaflow.uk',
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': '*',
   'Access-Control-Allow-Credentials': 'true'
 };
 
 // Create fetch handler
 export default {
   async fetch(request, env, ctx) {
+    // Log the request details
+    console.log('Request URL:', request.url);
+    console.log('Request method:', request.method);
+    console.log('Request headers:', Object.fromEntries(request.headers));
+
     // Initialize Stripe
     const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
