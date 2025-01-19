@@ -9,7 +9,8 @@ const router = Router();
 const corsHeaders = {
   'Access-Control-Allow-Origin': 'https://ideaflow.uk',
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-  'Access-Control-Allow-Headers': '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Credentials': 'true'
 };
 
 // Create fetch handler
@@ -30,7 +31,12 @@ export default {
 
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: corsHeaders });
+      return new Response(null, {
+        headers: {
+          ...corsHeaders,
+          'Access-Control-Max-Age': '86400',
+        }
+      });
     }
 
     // Route the request

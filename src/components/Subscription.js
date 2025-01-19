@@ -215,24 +215,38 @@ const Subscription = () => {
       const stripe = await stripePromise;
       
       console.log('API URL:', process.env.REACT_APP_API_URL);
+      console.log('Starting subscription process...');
       
       if (!stripe) {
+        console.error('Stripe not initialized');
         throw new Error('Payment system is not available. Please try again later.');
       }
       
+      const requestData = {
+        priceId: process.env.REACT_APP_STRIPE_PRICE_ID,
+        userId: auth.currentUser.uid,
+        returnUrl: window.location.origin + '/dashboard/subscription'
+      };
+      
+      console.log('Request data:', requestData);
+      
       // Create a checkout session using Firebase Function
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/create-checkout-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await auth.currentUser.getIdToken()}`
-        },
-        body: JSON.stringify({
-          priceId: process.env.REACT_APP_STRIPE_PRICE_ID,
-          userId: auth.currentUser.uid,
-          returnUrl: window.location.origin + '/dashboard/subscription'
-        }),
-      });
+      try {
+        console.log('Fetching from:', `${process.env.REACT_APP_API_URL}/create-checkout-session`);
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/create-checkout-session`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await auth.currentUser.getIdToken()}`
+          },
+          body: JSON.stringify(requestData),
+          mode: 'cors'
+        });
+        console.log('Response received:', response);
+      } catch (fetchError) {
+        console.error('Network error:', fetchError);
+        throw new Error(`Network error: ${fetchError.message}`);
+      }
   
       console.log('Response status:', response.status);
       if (!response.ok) {
@@ -242,22 +256,31 @@ const Subscription = () => {
       }
   
       const session = await response.json();
+      console.log('Session data received:', session);
       
       if (!session || !session.id) {
+        console.error('Invalid session data:', session);
         throw new Error('Failed to create checkout session');
       }
       
       // Redirect to Stripe Checkout
+      console.log('Redirecting to Stripe checkout...');
       const result = await stripe.redirectToCheckout({
         sessionId: session.id,
       });
       
       if (result.error) {
+        console.error('Stripe redirect error:', result.error);
         throw new Error(result.error.message);
       }
 
     } catch (error) {
       console.error('Error creating checkout session:', error);
+      console.error('Full error object:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       setError(error.message || 'Failed to process subscription. Please try again.');
     } finally {
       setLoading(false);
