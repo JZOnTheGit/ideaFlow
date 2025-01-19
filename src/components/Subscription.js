@@ -219,7 +219,7 @@ const Subscription = () => {
       }
       
       // Create a checkout session using Firebase Function
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/create-checkout-session`, {
+      const response = await fetch('https://ideaflow-api.workers.dev/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
