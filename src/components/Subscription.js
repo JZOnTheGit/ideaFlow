@@ -241,7 +241,7 @@ const Subscription = () => {
             'Authorization': `Bearer ${await auth.currentUser.getIdToken()}`
           },
           body: JSON.stringify(requestData),
-          mode: 'cors'
+          credentials: 'include'
         });
         console.log('Response received:', response);
       } catch (fetchError) {

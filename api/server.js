@@ -7,7 +7,7 @@ const router = Router();
 
 // Cors headers
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://ideaflow.uk',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Allow-Credentials': 'true'
@@ -114,8 +114,8 @@ async function handleCheckoutSession(request, stripe) {
         price: priceId,
         quantity: 1,
       }],
-      success_url: 'https://ideaflow.uk/dashboard?success=true',
-      cancel_url: 'https://ideaflow.uk/dashboard?canceled=true',
+      success_url: `${request.headers.get('Origin')}/dashboard?success=true`,
+      cancel_url: `${request.headers.get('Origin')}/dashboard?canceled=true`,
       client_reference_id: userId,
     });
 
