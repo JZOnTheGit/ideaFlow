@@ -231,9 +231,10 @@ const Subscription = () => {
       console.log('Request data:', requestData);
       
       // Create a checkout session using Firebase Function
+      let response;
       try {
         console.log('Fetching from:', `${process.env.REACT_APP_API_URL}/create-checkout-session`);
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/create-checkout-session`, {
+        response = await fetch(`${process.env.REACT_APP_API_URL}/create-checkout-session`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
