@@ -214,12 +214,14 @@ const Subscription = () => {
       setLoading(true);
       const stripe = await stripePromise;
       
+      console.log('API URL:', process.env.REACT_APP_API_URL);
+      
       if (!stripe) {
         throw new Error('Payment system is not available. Please try again later.');
       }
       
       // Create a checkout session using Firebase Function
-      const response = await fetch('https://ideaflow-api.workers.dev/create-checkout-session', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/create-checkout-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -232,8 +234,10 @@ const Subscription = () => {
         }),
       });
   
+      console.log('Response status:', response.status);
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Error data:', errorData);
         throw new Error(errorData.error || 'Failed to create checkout session');
       }
   
