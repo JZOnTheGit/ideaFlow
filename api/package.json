@@ -1,0 +1,21 @@
+{
+  "name": "ideaflow-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "stripe": "^14.12.0",
+    "@firebase/app": "^0.9.25",
+    "@firebase/firestore": "^4.4.0",
+    "itty-router": "^4.0.27",
+    "hono": "^3.12.5"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0",
+    "@cloudflare/workers-types": "^4.20231218.0"
+  }
+} 
