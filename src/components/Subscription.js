@@ -225,7 +225,6 @@ const Subscription = () => {
       const requestData = {
         priceId: process.env.REACT_APP_STRIPE_PRICE_ID,
         userId: auth.currentUser.uid,
-        returnUrl: window.location.origin + '/dashboard/subscription'
       };
       
       console.log('Request data:', requestData);
@@ -238,7 +237,6 @@ const Subscription = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${await auth.currentUser.getIdToken()}`
           },
           body: JSON.stringify(requestData),
           mode: 'cors'
@@ -259,21 +257,14 @@ const Subscription = () => {
       const session = await response.json();
       console.log('Session data received:', session);
       
-      if (!session || !session.id) {
+      if (!session || !session.url) {
         console.error('Invalid session data:', session);
         throw new Error('Failed to create checkout session');
       }
       
       // Redirect to Stripe Checkout
       console.log('Redirecting to Stripe checkout...');
-      const result = await stripe.redirectToCheckout({
-        sessionId: session.id,
-      });
-      
-      if (result.error) {
-        console.error('Stripe redirect error:', result.error);
-        throw new Error(result.error.message);
-      }
+      window.location.href = session.url;
 
     } catch (error) {
       console.error('Error creating checkout session:', error);

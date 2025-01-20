@@ -21,6 +21,15 @@ export default {
     console.log('Request method:', request.method);
     console.log('Request headers:', Object.fromEntries(request.headers));
 
+    // Verify Stripe key exists
+    if (!env.STRIPE_SECRET_KEY) {
+      console.error('Missing STRIPE_SECRET_KEY');
+      return new Response(JSON.stringify({ error: 'Server configuration error' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+
     // Initialize Stripe
     const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 
@@ -111,6 +120,9 @@ async function handleWebhook(request, env, stripe, db) {
 async function handleCheckoutSession(request, stripe) {
   const { priceId, userId } = await request.json();
 
+  // Get origin or use default
+  const origin = request.headers.get('Origin') || 'https://ideaflow.uk';
+
   try {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -119,8 +131,8 @@ async function handleCheckoutSession(request, stripe) {
         price: priceId,
         quantity: 1,
       }],
-      success_url: `${request.headers.get('Origin')}/dashboard?success=true`,
-      cancel_url: `${request.headers.get('Origin')}/dashboard?canceled=true`,
+      success_url: `${origin}/dashboard?success=true`,
+      cancel_url: `${origin}/dashboard?canceled=true`,
       client_reference_id: userId,
     });
 
