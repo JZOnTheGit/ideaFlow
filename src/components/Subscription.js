@@ -180,20 +180,30 @@ const Subscription = () => {
       // Verify the session and update local state
       const verifySession = async () => {
         try {
-          const response = await fetch(`${process.env.REACT_APP_API_URL}/verify-session`, {
+          const response = await fetch(`https://ideaflow-api.jass150505.workers.dev/verify-session`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${await auth.currentUser.getIdToken()}`
+              'Origin': 'https://ideaflow.uk'
             },
-            body: JSON.stringify({ sessionId })
+            body: JSON.stringify({ 
+              sessionId,
+              userId: auth.currentUser.uid  // Add user ID to verify request
+            })
           });
+
+          const data = await response.json();
+          console.log('Verify response:', data);
 
           if (response.ok) {
             // Clear the URL parameters
             window.history.replaceState({}, '', '/dashboard/subscription');
-            // Force a refresh of the subscription data
-            window.location.reload();
+            // Wait a moment for Firestore to update
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Refresh the page
+            window.location.href = '/dashboard/subscription';
+          } else {
+            throw new Error(data.error || 'Failed to verify session');
           }
         } catch (error) {
           console.error('Error verifying session:', error);
@@ -203,7 +213,7 @@ const Subscription = () => {
 
       verifySession();
     }
-  }, []);
+  }, [auth.currentUser]);  // Add auth.currentUser as dependency
 
   if (error) {
     return (

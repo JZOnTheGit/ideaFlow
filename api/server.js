@@ -62,9 +62,63 @@ export default {
       return handleCheckoutSession(request, stripe);
     }
 
+    if (request.url.includes('/verify-session')) {
+      return handleVerifySession(request, stripe, db);
+    }
+
     return new Response('Not found', { status: 404 });
   }
 };
+
+// Verify session endpoint
+async function handleVerifySession(request, stripe, db) {
+  const { sessionId, userId } = await request.json();
+
+  try {
+    // Retrieve the session
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    
+    if (session.payment_status === 'paid') {
+      // Get subscription details
+      const subscription = await stripe.subscriptions.retrieve(session.subscription);
+      
+      // Update user's subscription status in Firebase
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        subscriptionStatus: 'active',
+        subscriptionId: session.subscription,
+        priceId: subscription.items.data[0].price.id,
+        customerId: session.customer,
+        limits: {
+          pdfUploads: {
+            used: 0,
+            limit: 100  // Premium plan limit
+          },
+          websiteUploads: {
+            used: 0,
+            limit: 100  // Premium plan limit
+          }
+        }
+      });
+
+      console.log('Successfully updated user subscription status');
+      return new Response(JSON.stringify({ status: 'success' }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
+    return new Response(JSON.stringify({ error: 'Payment not completed' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+  } catch (error) {
+    console.error('Error verifying session:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+  }
+}
 
 // Stripe webhook endpoint
 async function handleWebhook(request, env, stripe, db) {
