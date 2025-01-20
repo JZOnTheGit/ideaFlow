@@ -8,29 +8,24 @@
   ],
   "routes": [
     {
-      "src": "/webhook",
-      "methods": ["POST"],
-      "headers": {
-        "Access-Control-Allow-Origin": "https://ideaflow.uk",
-        "Access-Control-Allow-Methods": "POST",
-        "Access-Control-Allow-Headers": "Content-Type, stripe-signature"
-      },
-      "dest": "index.js"
-    },
-    {
       "src": "/(.*)",
       "headers": {
         "Access-Control-Allow-Origin": "https://ideaflow.uk",
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, stripe-signature",
         "Access-Control-Allow-Credentials": "true"
       },
       "continue": true
     },
     {
       "src": "/create-checkout-session",
-      "methods": ["OPTIONS"],
-      "status": 200
+      "methods": ["POST", "OPTIONS"],
+      "headers": {
+        "Access-Control-Allow-Origin": "https://ideaflow.uk",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Credentials": "true"
+      }
     },
     {
       "src": "/(.*)",
