@@ -274,6 +274,13 @@ const Subscription = () => {
     try {
       setLoading(true);
       
+      console.log('Starting subscription with:', {
+        priceId,
+        userId: auth.currentUser.uid,
+        email: auth.currentUser.email,
+        apiUrl: process.env.REACT_APP_API_URL
+      });
+      
       // Create checkout session
       const response = await fetch(
         `${process.env.REACT_APP_API_URL}/create-checkout-session`,
@@ -281,6 +288,7 @@ const Subscription = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await auth.currentUser.getIdToken()}`
           },
           body: JSON.stringify({
             priceId,
@@ -290,22 +298,31 @@ const Subscription = () => {
         }
       );
   
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create checkout session');
+      console.log('Response status:', response.status);
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        throw new Error(`Invalid JSON response: ${responseText}`);
       }
   
-      const session = await response.json();
-      console.log('Session data received:', session);
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create checkout session');
+      }
+  
+      console.log('Session data received:', data);
       
-      if (!session || !session.url) {
-        console.error('Invalid session data:', session);
+      if (!data || !data.url) {
+        console.error('Invalid session data:', data);
         throw new Error('Failed to create checkout session');
       }
       
       // Redirect to Stripe Checkout
       console.log('Redirecting to Stripe checkout...');
-      window.location.href = session.url;
+      window.location.href = data.url;
 
     } catch (error) {
       console.error('Error creating checkout session:', error);

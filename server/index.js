@@ -68,7 +68,26 @@ app.get('/user/:userId', async (req, res) => {
 // Create checkout session
 app.post('/create-checkout-session', async (req, res) => {
   try {
+    // Get the authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Missing or invalid authorization header' });
+    }
+
+    // Extract the token
+    const idToken = authHeader.split('Bearer ')[1];
+
+    // Verify the Firebase token
+    try {
+      await admin.auth().verifyIdToken(idToken);
+    } catch (error) {
+      console.error('Token verification failed:', error);
+      return res.status(401).json({ error: 'Invalid authentication token' });
+    }
+
     const { priceId, userId, email } = req.body;
+
+    console.log('Creating checkout session with:', { priceId, userId, email });
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -88,6 +107,7 @@ app.post('/create-checkout-session', async (req, res) => {
       }
     });
 
+    console.log('Created session:', session);
     res.json({ url: session.url });
   } catch (error) {
     console.error('Error creating checkout session:', error);
