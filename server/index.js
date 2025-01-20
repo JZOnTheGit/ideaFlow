@@ -102,41 +102,35 @@ app.get('/user/:userId', async (req, res) => {
 // Create checkout session
 app.post('/create-checkout-session', async (req, res) => {
   try {
-    // Verify Firebase token
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Missing or invalid authorization header' });
-    }
-
-    const idToken = authHeader.split('Bearer ')[1];
+    const { priceId, userId, email, successUrl, cancelUrl } = req.body;
     
-    try {
-      await admin.auth().verifyIdToken(idToken);
-    } catch (error) {
-      console.error('Token verification failed:', error);
-      return res.status(401).json({ error: 'Invalid authentication token' });
+    console.log('Creating checkout session for:', { userId, email, priceId });
+
+    if (!userId || !email || !priceId) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const { userId, email } = req.body;
-
-    // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
-      line_items: [{
-        price: process.env.STRIPE_PRICE_ID,
-        quantity: 1,
-      }],
-      success_url: `${process.env.FRONTEND_URL}/dashboard/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL}/dashboard/subscription?canceled=true`,
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
       client_reference_id: userId,
       customer_email: email,
+      success_url: successUrl || `${process.env.FRONTEND_URL}/dashboard/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancelUrl || `${process.env.FRONTEND_URL}/dashboard/subscription?canceled=true`,
       metadata: {
         userId: userId
       }
     });
 
+    console.log('Checkout session created:', session.id);
     res.json({ url: session.url });
+    
   } catch (error) {
     console.error('Error creating checkout session:', error);
     res.status(500).json({ error: error.message });
@@ -144,66 +138,35 @@ app.post('/create-checkout-session', async (req, res) => {
 });
 
 // Stripe webhook
-app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
   const sig = req.headers['stripe-signature'];
+  let event;
 
   try {
-    const event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-
-    switch (event.type) {
-      case 'checkout.session.completed':
-        const session = event.data.object;
-        const subscription = await stripe.subscriptions.retrieve(session.subscription);
-        
-        // Update Firestore with new subscription data
-        await db.collection('users').doc(session.client_reference_id).update({
-          subscriptionStatus: 'active',
-          subscriptionId: session.subscription,
-          priceId: subscription.items.data[0].price.id,
-          customerId: session.customer,
-          plan: 'pro',
-          subscription: 'pro',
-          pdfUploadsUsed: 0,
-          pdfUploadsLimit: 80,
-          websiteUploadsUsed: 0,
-          websiteUploadsLimit: 50,
-          generationsPerUpload: 3
-        });
-        break;
-
-      case 'customer.subscription.deleted':
-        const canceledSubscription = event.data.object;
-        const snapshot = await db.collection('users')
-          .where('subscriptionId', '==', canceledSubscription.id)
-          .limit(1)
-          .get();
-
-        if (!snapshot.empty) {
-          await snapshot.docs[0].ref.update({
-            subscriptionStatus: 'cancelled',
-            subscriptionId: null,
-            priceId: null,
-            plan: 'free',
-            subscription: 'free',
-            pdfUploadsUsed: 0,
-            pdfUploadsLimit: 2,
-            websiteUploadsUsed: 0,
-            websiteUploadsLimit: 1,
-            generationsPerUpload: 1
-          });
-        }
-        break;
-    }
-
-    res.json({ received: true });
-  } catch (error) {
-    console.error('Error processing webhook:', error);
-    res.status(400).send(`Webhook Error: ${error.message}`);
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error('Webhook Error:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
   }
+
+  console.log('Received webhook event:', event.type);
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    // Handle successful payment
+    try {
+      await admin.firestore().collection('users').doc(session.client_reference_id).update({
+        'subscription.status': 'active',
+        'subscription.plan': 'pro',
+        'subscription.stripeCustomerId': session.customer,
+        'subscription.stripeSubscriptionId': session.subscription
+      });
+    } catch (error) {
+      console.error('Error updating user subscription:', error);
+    }
+  }
+
+  res.json({received: true});
 });
 
 const PORT = process.env.PORT || 3001;

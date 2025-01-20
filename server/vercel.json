@@ -8,6 +8,16 @@
   ],
   "routes": [
     {
+      "src": "/webhook",
+      "methods": ["POST"],
+      "headers": {
+        "Access-Control-Allow-Origin": "https://ideaflow.uk",
+        "Access-Control-Allow-Methods": "POST",
+        "Access-Control-Allow-Headers": "Content-Type, stripe-signature"
+      },
+      "dest": "index.js"
+    },
+    {
       "src": "/(.*)",
       "headers": {
         "Access-Control-Allow-Origin": "https://ideaflow.uk",

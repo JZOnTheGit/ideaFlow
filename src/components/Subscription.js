@@ -273,12 +273,15 @@ const Subscription = () => {
   const handleSubscribe = async (priceId) => {
     try {
       setLoading(true);
+      setError(null); // Reset error state
       
       if (!auth.currentUser) {
         throw new Error('Please sign in to upgrade');
       }
 
       const idToken = await auth.currentUser.getIdToken();
+      
+      console.log('Making request to:', `${process.env.REACT_APP_API_URL}/create-checkout-session`);
       
       // Create checkout session
       const response = await fetch(
@@ -289,11 +292,12 @@ const Subscription = () => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${idToken}`
           },
-          mode: 'cors',
           body: JSON.stringify({
             priceId: process.env.REACT_APP_STRIPE_PRICE_ID,
             userId: auth.currentUser.uid,
-            email: auth.currentUser.email
+            email: auth.currentUser.email,
+            successUrl: `${window.location.origin}/dashboard/subscription?success=true`,
+            cancelUrl: `${window.location.origin}/dashboard/subscription?canceled=true`
           })
         }
       );
@@ -301,15 +305,23 @@ const Subscription = () => {
       if (!response.ok) {
         const text = await response.text();
         console.error('Server response:', text);
-        throw new Error(text || 'Failed to create checkout session');
+        const errorData = await response.text();
+        throw new Error(errorData || 'Failed to create checkout session');
       }
 
       const data = await response.json();
+      console.log('Checkout session created:', data);
+      
+      if (!data.url) {
+        throw new Error('No checkout URL received from server');
+      }
+
       window.location.href = data.url;
 
     } catch (error) {
       console.error('Error creating checkout session:', error);
       setError(error.message);
+      alert(`Failed to create checkout session: ${error.message}`);
     } finally {
       setLoading(false);
     }
