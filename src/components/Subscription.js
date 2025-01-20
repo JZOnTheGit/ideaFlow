@@ -282,15 +282,14 @@ const Subscription = () => {
       
       // Create checkout session
       const response = await fetch(
-        'https://ideaflow-r1wva9gka-jzonthegits-projects.vercel.app/create-checkout-session',
+        `${process.env.REACT_APP_API_URL}/create-checkout-session`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${idToken}`
           },
-          mode: 'cors',
-          credentials: 'same-origin',
+          credentials: 'include',
           body: JSON.stringify({
             priceId: process.env.REACT_APP_STRIPE_PRICE_ID,
             userId: auth.currentUser.uid,
@@ -301,17 +300,11 @@ const Subscription = () => {
 
       if (!response.ok) {
         const text = await response.text();
-        console.error('Server response:', text); // Debug log
-        try {
-          const errorData = JSON.parse(text);
-          throw new Error(errorData.error || 'Failed to create checkout session');
-        } catch (e) {
-          throw new Error(`Server error: ${text}`);
-        }
+        console.error('Server response:', text);
+        throw new Error(text || 'Failed to create checkout session');
       }
 
       const data = await response.json();
-      console.log('Checkout session created:', data); // Debug log
       window.location.href = data.url;
 
     } catch (error) {

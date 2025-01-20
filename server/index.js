@@ -58,16 +58,19 @@ const authMiddleware = async (req, res, next) => {
 // Apply auth middleware to all routes except health check
 app.use('/api', authMiddleware);
 
-app.use(cors({
+const corsOptions = {
   origin: 'https://ideaflow.uk',
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
-  optionsSuccessStatus: 200
-}));
+  optionsSuccessStatus: 200,
+  maxAge: 86400
+};
 
-// Add preflight handling
-app.options('*', cors());
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 
