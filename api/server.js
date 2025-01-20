@@ -78,42 +78,72 @@ async function handleWebhook(request, env, stripe, db) {
       env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
-  // Handle the event
-  switch (event.type) {
-    case 'checkout.session.completed':
-      const session = event.data.object;
-      // Update user's subscription status in Firebase
-      const userRef = doc(db, 'users', session.client_reference_id);
-      await updateDoc(userRef, {
-        subscriptionStatus: 'active',
-        subscriptionId: session.subscription,
-        priceId: session.line_items?.data[0]?.price?.id
-      });
-      break;
-    
-    case 'customer.subscription.deleted':
-      const subscription = event.data.object;
-      // Update user's subscription status when cancelled
-      const q = query(collection(db, 'users'), where('subscriptionId', '==', subscription.id));
-      const querySnapshot = await getDocs(q);
-      
-      if (!querySnapshot.empty) {
-        const userDoc = querySnapshot.docs[0];
-        await updateDoc(userDoc.ref, {
-          subscriptionStatus: 'cancelled',
-          subscriptionId: null,
-          priceId: null
-        });
-      }
-      break;
-  }
+  console.log('Received webhook event:', event.type);
 
-  return new Response(JSON.stringify({ received: true }), {
-    headers: { 'Content-Type': 'application/json', ...corsHeaders },
-  });
+  try {
+    // Handle the event
+    switch (event.type) {
+      case 'checkout.session.completed':
+        const session = event.data.object;
+        console.log('Checkout session completed:', session);
+        
+        // Update user's subscription status in Firebase
+        const userRef = doc(db, 'users', session.client_reference_id);
+        
+        // Get the subscription details
+        const subscription = await stripe.subscriptions.retrieve(session.subscription);
+        
+        await updateDoc(userRef, {
+          subscriptionStatus: 'active',
+          subscriptionId: session.subscription,
+          priceId: subscription.items.data[0].price.id,
+          customerId: session.customer,
+          // Set the usage limits for premium plan
+          limits: {
+            pdfUploads: {
+              used: 0,
+              limit: 100  // Premium plan limit
+            },
+            websiteUploads: {
+              used: 0,
+              limit: 100  // Premium plan limit
+            }
+          }
+        });
+        console.log('Updated user document in Firestore');
+        break;
+      
+      case 'customer.subscription.deleted':
+        const canceledSubscription = event.data.object;
+        // Update user's subscription status when cancelled
+        const q = query(collection(db, 'users'), where('subscriptionId', '==', canceledSubscription.id));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          const userDoc = querySnapshot.docs[0];
+          await updateDoc(userDoc.ref, {
+            subscriptionStatus: 'cancelled',
+            subscriptionId: null,
+            priceId: null
+          });
+        }
+        break;
+    }
+
+    return new Response(JSON.stringify({ received: true }), {
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+  } catch (error) {
+    console.error('Error processing webhook:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    });
+  }
 }
 
 // Create checkout session endpoint
@@ -131,7 +161,7 @@ async function handleCheckoutSession(request, stripe) {
         price: priceId,
         quantity: 1,
       }],
-      success_url: `${origin}/dashboard?success=true`,
+      success_url: `${origin}/dashboard/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/dashboard?canceled=true`,
       client_reference_id: userId,
       allow_promotion_codes: true,

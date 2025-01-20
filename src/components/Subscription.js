@@ -176,6 +176,7 @@ const Subscription = () => {
     const sessionId = queryParams.get('session_id');
 
     if (success && sessionId) {
+      console.log('Payment successful, verifying session:', sessionId);
       // Verify the session and update local state
       const verifySession = async () => {
         try {
@@ -189,11 +190,14 @@ const Subscription = () => {
           });
 
           if (response.ok) {
-            // Refresh the subscription context
-            window.location.href = '/dashboard/subscription';
+            // Clear the URL parameters
+            window.history.replaceState({}, '', '/dashboard/subscription');
+            // Force a refresh of the subscription data
+            window.location.reload();
           }
         } catch (error) {
           console.error('Error verifying session:', error);
+          setError('Failed to verify subscription. Please contact support.');
         }
       };
 
