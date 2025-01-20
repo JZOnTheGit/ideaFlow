@@ -291,6 +291,7 @@ const Subscription = () => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${idToken}`
           },
+          credentials: 'include',
           body: JSON.stringify({
             priceId: process.env.REACT_APP_STRIPE_PRICE_ID,
             userId: auth.currentUser.uid,

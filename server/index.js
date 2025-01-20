@@ -62,44 +62,18 @@ const authMiddleware = async (req, res, next) => {
 app.use('/create-checkout-session', authMiddleware);
 app.use('/cancel-subscription', authMiddleware);
 
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'stripe-signature']
-}));
+const corsOptions = {
+  origin: 'https://ideaflow.uk',
+  methods: ['POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
 
-app.use(express.json());
+// Handle preflight requests
+app.options('/create-checkout-session', cors(corsOptions));
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-// Get user data
-app.get('/user/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const userDoc = await db.collection('users').doc(userId).get();
-    const userData = userDoc.data();
-
-    res.json({
-      subscriptionStatus: userData?.subscriptionStatus || 'inactive',
-      plan: userData?.plan || 'free',
-      priceId: userData?.priceId,
-      pdfUploadsUsed: userData?.pdfUploadsUsed || 0,
-      pdfUploadsLimit: userData?.pdfUploadsLimit || 2,
-      websiteUploadsUsed: userData?.websiteUploadsUsed || 0,
-      websiteUploadsLimit: userData?.websiteUploadsLimit || 1
-    });
-  } catch (error) {
-    console.error('Error fetching user data:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Create checkout session
-app.post('/create-checkout-session', async (req, res) => {
+// Handle actual requests
+app.post('/create-checkout-session', cors(corsOptions), authMiddleware, async (req, res) => {
   try {
     const { priceId, userId, email, successUrl, cancelUrl } = req.body;
     
