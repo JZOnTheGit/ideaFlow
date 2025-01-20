@@ -156,6 +156,34 @@ const ModalContent = styled.div`
   text-align: center;
 `;
 
+const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+`;
+
+const LoadingSpinner = styled.div`
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border-top: 4px solid #c49952;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+const LoadingText = styled.div`
+  color: #ffffff;
+  font-size: 1.1rem;
+`;
+
 const Subscription = () => {
   const { subscription, usage, plans, refreshSubscription } = useSubscription();
   const [loading, setLoading] = useState(false);
@@ -190,12 +218,12 @@ const Subscription = () => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Origin': 'https://ideaflow.uk'
             },
             body: JSON.stringify({ 
               sessionId,
-              userId: auth.currentUser.uid  // Add user ID to verify request
-            })
+              userId: auth.currentUser.uid
+            }),
+            mode: 'cors'
           });
 
           const data = await response.json();
@@ -224,7 +252,10 @@ const Subscription = () => {
   if (isLoading) {
     return (
       <Container>
-        <div>Loading subscription data...</div>
+        <LoadingContainer>
+          <LoadingSpinner />
+          <LoadingText>Loading subscription data...</LoadingText>
+        </LoadingContainer>
       </Container>
     );
   }

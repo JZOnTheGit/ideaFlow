@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { getDoc, doc } from 'firebase/firestore';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
 import { useSubscriptionContext } from '../contexts/SubscriptionContext';
 
 const useSubscription = () => {
-  const { setSubscription, setUsage } = useSubscriptionContext();
+  const [subscription, setSubscription] = useState(null);
+  const [usage, setUsage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(Date.now());
 
@@ -38,8 +39,11 @@ const useSubscription = () => {
           },
         });
 
+        setLoading(false);
+
       } catch (error) {
         console.error('Error fetching subscription:', error);
+        setLoading(false);
       }
     };
 
@@ -48,9 +52,31 @@ const useSubscription = () => {
 
   return {
     loading,
-    subscription: setSubscription,
-    usage: setUsage,
-    plans: [],
+    subscription,
+    usage,
+    plans: [
+      {
+        name: 'Free Plan',
+        price: '£0',
+        features: [
+          '2 PDF uploads per day',
+          '1 website link per day',
+          '1 generation per content type',
+          'Basic features'
+        ]
+      },
+      {
+        name: 'Pro Plan',
+        price: '£15',
+        features: [
+          '80 PDF uploads per month',
+          '50 website uploads per month',
+          '3 generations per content type',
+          'Priority support',
+          'Advanced features'
+        ]
+      }
+    ],
     refreshSubscription,
   };
 };

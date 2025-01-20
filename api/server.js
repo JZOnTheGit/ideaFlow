@@ -7,7 +7,7 @@ const router = Router();
 
 // Cors headers
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://ideaflow.uk',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
   'Access-Control-Allow-Headers': '*',
   'Access-Control-Allow-Credentials': 'true'
