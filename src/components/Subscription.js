@@ -273,15 +273,14 @@ const Subscription = () => {
   const handleSubscribe = async (priceId) => {
     try {
       setLoading(true);
-      setError(null); // Reset error state
+      setError(null);
       
       if (!auth.currentUser) {
         throw new Error('Please sign in to upgrade');
       }
 
-      const idToken = await auth.currentUser.getIdToken();
-      
-      console.log('Making request to:', `${process.env.REACT_APP_API_URL}/create-checkout-session`);
+      const idToken = await auth.currentUser.getIdToken(true);
+      console.log('Got ID token, making request...');
       
       // Create checkout session
       const response = await fetch(
@@ -292,7 +291,6 @@ const Subscription = () => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${idToken}`
           },
-          mode: 'no-cors',
           body: JSON.stringify({
             priceId: process.env.REACT_APP_STRIPE_PRICE_ID,
             userId: auth.currentUser.uid,
@@ -303,11 +301,14 @@ const Subscription = () => {
         }
       );
 
+      if (response.status === 401) {
+        throw new Error('Authentication failed. Please try signing out and back in.');
+      }
+
       if (!response.ok) {
         const text = await response.text();
         console.error('Server response:', text);
-        const errorData = await response.text();
-        throw new Error(errorData || 'Failed to create checkout session');
+        throw new Error(text || 'Failed to create checkout session');
       }
 
       const data = await response.json();

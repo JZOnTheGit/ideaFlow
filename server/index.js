@@ -38,16 +38,19 @@ const app = express();
 
 // Auth middleware for protected routes
 const authMiddleware = async (req, res, next) => {
-  if (req.path === '/health') return next();
+  if (req.method === 'OPTIONS') return next();
 
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('Missing or invalid auth header:', authHeader);
     return res.status(401).json({ error: 'Missing or invalid authorization header' });
   }
 
   try {
     const idToken = authHeader.split('Bearer ')[1];
+    console.log('Verifying token...');
     await admin.auth().verifyIdToken(idToken);
+    console.log('Token verified successfully');
     next();
   } catch (error) {
     console.error('Token verification failed:', error);
@@ -55,8 +58,9 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-// Apply auth middleware to all routes except health check
-app.use('/api', authMiddleware);
+// Apply auth middleware to specific routes that need it
+app.use('/create-checkout-session', authMiddleware);
+app.use('/cancel-subscription', authMiddleware);
 
 app.use(cors({
   origin: '*',
