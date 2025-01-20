@@ -89,14 +89,15 @@ async function handleVerifySession(request, stripe, db) {
         subscriptionId: session.subscription,
         priceId: subscription.items.data[0].price.id,
         customerId: session.customer,
+        plan: 'pro',  // Set plan to pro
         limits: {
           pdfUploads: {
             used: 0,
-            limit: 100  // Premium plan limit
+            limit: 80  // Premium plan limit
           },
           websiteUploads: {
             used: 0,
-            limit: 100  // Premium plan limit
+            limit: 50  // Premium plan limit
           }
         }
       });
@@ -156,15 +157,15 @@ async function handleWebhook(request, env, stripe, db) {
           subscriptionId: session.subscription,
           priceId: subscription.items.data[0].price.id,
           customerId: session.customer,
-          // Set the usage limits for premium plan
+          plan: 'pro',  // Set plan to pro
           limits: {
             pdfUploads: {
               used: 0,
-              limit: 100  // Premium plan limit
+              limit: 80  // Premium plan limit
             },
             websiteUploads: {
               used: 0,
-              limit: 100  // Premium plan limit
+              limit: 50  // Premium plan limit
             }
           }
         });
@@ -182,7 +183,18 @@ async function handleWebhook(request, env, stripe, db) {
           await updateDoc(userDoc.ref, {
             subscriptionStatus: 'cancelled',
             subscriptionId: null,
-            priceId: null
+            priceId: null,
+            plan: 'free',  // Reset plan to free
+            limits: {
+              pdfUploads: {
+                used: 0,
+                limit: 2  // Free plan limit
+              },
+              websiteUploads: {
+                used: 0,
+                limit: 1  // Free plan limit
+              }
+            }
           });
         }
         break;

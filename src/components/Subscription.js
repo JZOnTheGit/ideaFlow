@@ -157,10 +157,17 @@ const ModalContent = styled.div`
 `;
 
 const Subscription = () => {
-  const { subscription, usage, plans } = useSubscription();
+  const { subscription, usage, plans, refreshSubscription } = useSubscription();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (subscription && usage) {
+      setIsLoading(false);
+    }
+  }, [subscription, usage]);
 
   useEffect(() => {
     // Verify Stripe key is available
@@ -177,7 +184,6 @@ const Subscription = () => {
 
     if (success && sessionId) {
       console.log('Payment successful, verifying session:', sessionId);
-      // Verify the session and update local state
       const verifySession = async () => {
         try {
           const response = await fetch(`https://ideaflow-api.jass150505.workers.dev/verify-session`, {
@@ -200,8 +206,8 @@ const Subscription = () => {
             window.history.replaceState({}, '', '/dashboard/subscription');
             // Wait a moment for Firestore to update
             await new Promise(resolve => setTimeout(resolve, 2000));
-            // Refresh the page
-            window.location.href = '/dashboard/subscription';
+            // Refresh the subscription data
+            refreshSubscription();
           } else {
             throw new Error(data.error || 'Failed to verify session');
           }
@@ -213,7 +219,15 @@ const Subscription = () => {
 
       verifySession();
     }
-  }, [auth.currentUser]);  // Add auth.currentUser as dependency
+  }, [auth.currentUser, refreshSubscription]);
+
+  if (isLoading) {
+    return (
+      <Container>
+        <div>Loading subscription data...</div>
+      </Container>
+    );
+  }
 
   if (error) {
     return (
