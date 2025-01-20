@@ -274,13 +274,15 @@ const Subscription = () => {
     try {
       setLoading(true);
       
+      console.log('API URL:', process.env.REACT_APP_API_URL); // Debug log
+      
       if (!auth.currentUser) {
         throw new Error('Please sign in to upgrade');
       }
       
       // Create checkout session
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/create-checkout-session`,
+        'https://ideaflow-r1wva9gka-jzonthegits-projects.vercel.app/create-checkout-session',
         {
           method: 'POST',
           headers: {
@@ -296,11 +298,18 @@ const Subscription = () => {
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create checkout session');
+        const text = await response.text();
+        console.error('Server response:', text); // Debug log
+        try {
+          const errorData = JSON.parse(text);
+          throw new Error(errorData.error || 'Failed to create checkout session');
+        } catch (e) {
+          throw new Error(`Server error: ${text}`);
+        }
       }
 
       const data = await response.json();
+      console.log('Checkout session created:', data); // Debug log
       window.location.href = data.url;
 
     } catch (error) {

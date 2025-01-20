@@ -59,7 +59,7 @@ const authMiddleware = async (req, res, next) => {
 app.use('/api', authMiddleware);
 
 app.use(cors({
-  origin: 'https://ideaflow.uk',
+  origin: ['https://ideaflow.uk', 'https://ideaflow.pages.dev', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
