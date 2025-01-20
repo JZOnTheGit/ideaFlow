@@ -65,6 +65,10 @@ app.use(cors({
   credentials: true,
   optionsSuccessStatus: 200
 }));
+
+// Add preflight handling
+app.options('*', cors());
+
 app.use(express.json());
 
 // Get user data

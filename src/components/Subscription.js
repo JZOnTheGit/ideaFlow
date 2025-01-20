@@ -274,11 +274,11 @@ const Subscription = () => {
     try {
       setLoading(true);
       
-      console.log('API URL:', process.env.REACT_APP_API_URL); // Debug log
-      
       if (!auth.currentUser) {
         throw new Error('Please sign in to upgrade');
       }
+
+      const idToken = await auth.currentUser.getIdToken();
       
       // Create checkout session
       const response = await fetch(
@@ -287,9 +287,10 @@ const Subscription = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${await auth.currentUser.getIdToken()}`
+            'Authorization': `Bearer ${idToken}`
           },
           mode: 'cors',
+          credentials: 'same-origin',
           body: JSON.stringify({
             priceId: process.env.REACT_APP_STRIPE_PRICE_ID,
             userId: auth.currentUser.uid,

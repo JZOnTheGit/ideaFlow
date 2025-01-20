@@ -4,26 +4,11 @@
     {
       "src": "index.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "methods": ["OPTIONS"],
-      "headers": {
-        "Access-Control-Allow-Origin": "https://ideaflow.uk",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        "Access-Control-Max-Age": "86400",
-        "Access-Control-Allow-Credentials": "true"
-      }
-    },
-    {
-      "src": "/.*",
       "headers": {
         "Access-Control-Allow-Origin": "https://ideaflow.uk",
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -32,10 +17,14 @@
       }
     },
     {
-      "src": "/health",
-      "dest": "/api/health",
-      "methods": ["GET", "OPTIONS"],
-      "continue": true
+      "src": "/create-checkout-session",
+      "methods": ["POST", "OPTIONS"],
+      "headers": {
+        "Access-Control-Allow-Origin": "https://ideaflow.uk",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Credentials": "true"
+      }
     },
     {
       "src": "/(.*)",
