@@ -10,22 +10,11 @@
     {
       "src": "/(.*)",
       "headers": {
-        "Access-Control-Allow-Origin": "https://ideaflow.uk",
+        "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, stripe-signature",
-        "Access-Control-Allow-Credentials": "true"
+        "Access-Control-Allow-Headers": "*"
       },
       "continue": true
-    },
-    {
-      "src": "/create-checkout-session",
-      "methods": ["POST", "OPTIONS"],
-      "headers": {
-        "Access-Control-Allow-Origin": "https://ideaflow.uk",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        "Access-Control-Allow-Credentials": "true"
-      }
     },
     {
       "src": "/(.*)",
