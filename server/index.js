@@ -64,15 +64,22 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
   optionsSuccessStatus: 200,
-  maxAge: 86400
+  maxAge: 86400,
+  preflightContinue: false
 };
 
 app.use(cors(corsOptions));
 
-// Handle preflight requests
-app.options('*', cors(corsOptions));
+// Handle specific route preflight
+app.options('/create-checkout-session', cors(corsOptions));
 
 app.use(express.json());
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
 
 // Get user data
 app.get('/user/:userId', async (req, res) => {
