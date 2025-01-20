@@ -1,6 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
 const Stripe = require('stripe');
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2023-10-16'
@@ -36,6 +35,8 @@ const db = admin.firestore();
 
 const app = express();
 
+app.use(express.json());
+
 // Auth middleware for protected routes
 const authMiddleware = async (req, res, next) => {
   if (req.method === 'OPTIONS') return next();
@@ -62,18 +63,19 @@ const authMiddleware = async (req, res, next) => {
 app.use('/create-checkout-session', authMiddleware);
 app.use('/cancel-subscription', authMiddleware);
 
-const corsOptions = {
-  origin: 'https://ideaflow.uk',
-  methods: ['POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-};
+// Simple middleware to handle CORS
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://ideaflow.uk');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
-// Handle preflight requests
-app.options('/create-checkout-session', cors(corsOptions));
-
-// Handle actual requests
-app.post('/create-checkout-session', cors(corsOptions), authMiddleware, async (req, res) => {
+app.post('/create-checkout-session', authMiddleware, async (req, res) => {
   try {
     const { priceId, userId, email, successUrl, cancelUrl } = req.body;
     
