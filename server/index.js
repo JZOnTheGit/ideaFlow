@@ -62,7 +62,8 @@ app.use(cors({
   origin: ['https://ideaflow.uk', 'https://ideaflow.pages.dev', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  credentials: true,
+  optionsSuccessStatus: 200
 }));
 app.use(express.json());
 
