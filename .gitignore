@@ -40,3 +40,4 @@ Thumbs.db
 
 # New service account file
 api/service-account.json
+api/serviceAccountKey.json

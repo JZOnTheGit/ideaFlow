@@ -4,9 +4,27 @@
     {
       "src": "index.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
+    {
+      "src": "/.*",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+      }
+    },
+    {
+      "src": "/health",
+      "dest": "/api/health",
+      "methods": ["GET", "OPTIONS"],
+      "continue": true
+    },
     {
       "src": "/(.*)",
       "dest": "index.js"

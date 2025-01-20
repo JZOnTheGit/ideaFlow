@@ -274,12 +274,9 @@ const Subscription = () => {
     try {
       setLoading(true);
       
-      console.log('Starting subscription with:', {
-        priceId,
-        userId: auth.currentUser.uid,
-        email: auth.currentUser.email,
-        apiUrl: process.env.REACT_APP_API_URL
-      });
+      if (!auth.currentUser) {
+        throw new Error('Please sign in to upgrade');
+      }
       
       // Create checkout session
       const response = await fetch(
@@ -291,47 +288,24 @@ const Subscription = () => {
             'Authorization': `Bearer ${await auth.currentUser.getIdToken()}`
           },
           body: JSON.stringify({
-            priceId,
+            priceId: process.env.REACT_APP_STRIPE_PRICE_ID,
             userId: auth.currentUser.uid,
             email: auth.currentUser.email
           })
         }
       );
-  
-      console.log('Response status:', response.status);
-      const responseText = await response.text();
-      console.log('Response text:', responseText);
-      
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (e) {
-        throw new Error(`Invalid JSON response: ${responseText}`);
-      }
-  
+
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create checkout session');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create checkout session');
       }
-  
-      console.log('Session data received:', data);
-      
-      if (!data || !data.url) {
-        console.error('Invalid session data:', data);
-        throw new Error('Failed to create checkout session');
-      }
-      
-      // Redirect to Stripe Checkout
-      console.log('Redirecting to Stripe checkout...');
+
+      const data = await response.json();
       window.location.href = data.url;
 
     } catch (error) {
       console.error('Error creating checkout session:', error);
-      console.error('Full error object:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
-      setError(error.message || 'Failed to process subscription. Please try again.');
+      setError(error.message);
     } finally {
       setLoading(false);
     }

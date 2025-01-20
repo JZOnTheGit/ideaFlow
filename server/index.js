@@ -35,10 +35,33 @@ admin.initializeApp({
 const db = admin.firestore();
 
 const app = express();
+
+// Auth middleware for protected routes
+const authMiddleware = async (req, res, next) => {
+  if (req.path === '/health') return next();
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Missing or invalid authorization header' });
+  }
+
+  try {
+    const idToken = authHeader.split('Bearer ')[1];
+    await admin.auth().verifyIdToken(idToken);
+    next();
+  } catch (error) {
+    console.error('Token verification failed:', error);
+    res.status(401).json({ error: 'Invalid authentication token' });
+  }
+};
+
+// Apply auth middleware to all routes except health check
+app.use('/api', authMiddleware);
+
 app.use(cors({
   origin: 'https://ideaflow.uk',
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: '*',
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
 app.use(express.json());
@@ -68,16 +91,14 @@ app.get('/user/:userId', async (req, res) => {
 // Create checkout session
 app.post('/create-checkout-session', async (req, res) => {
   try {
-    // Get the authorization header
+    // Verify Firebase token
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'Missing or invalid authorization header' });
     }
 
-    // Extract the token
     const idToken = authHeader.split('Bearer ')[1];
-
-    // Verify the Firebase token
+    
     try {
       await admin.auth().verifyIdToken(idToken);
     } catch (error) {
@@ -85,29 +106,25 @@ app.post('/create-checkout-session', async (req, res) => {
       return res.status(401).json({ error: 'Invalid authentication token' });
     }
 
-    const { priceId, userId, email } = req.body;
+    const { userId, email } = req.body;
 
-    console.log('Creating checkout session with:', { priceId, userId, email });
-
+    // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{
-        price: priceId,
+        price: process.env.STRIPE_PRICE_ID,
         quantity: 1,
       }],
-      success_url: 'https://ideaflow.uk/dashboard/subscription?success=true&session_id={CHECKOUT_SESSION_ID}',
-      cancel_url: 'https://ideaflow.uk/dashboard?canceled=true',
+      success_url: `${process.env.FRONTEND_URL}/dashboard/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.FRONTEND_URL}/dashboard/subscription?canceled=true`,
       client_reference_id: userId,
-      allow_promotion_codes: true,
-      billing_address_collection: 'auto',
       customer_email: email,
       metadata: {
         userId: userId
       }
     });
 
-    console.log('Created session:', session);
     res.json({ url: session.url });
   } catch (error) {
     console.error('Error creating checkout session:', error);
@@ -131,6 +148,7 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
         const session = event.data.object;
         const subscription = await stripe.subscriptions.retrieve(session.subscription);
         
+        // Update Firestore with new subscription data
         await db.collection('users').doc(session.client_reference_id).update({
           subscriptionStatus: 'active',
           subscriptionId: session.subscription,
