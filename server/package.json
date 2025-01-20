@@ -1,5 +1,5 @@
 {
-  "name": "server",
+  "name": "ideaflow-server",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -8,12 +8,15 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
+    "dotenv": "^16.0.3",
     "express": "^4.18.2",
-    "firebase-admin": "^11.8.0",
-    "stripe": "^12.0.0"
+    "firebase-admin": "^11.5.0",
+    "stripe": "^14.12.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }

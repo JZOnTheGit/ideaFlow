@@ -21,7 +21,7 @@ const useSubscription = () => {
         const idToken = await auth.currentUser.getIdToken();
         
         // Fetch user data from your API endpoint
-        const response = await fetch(`https://ideaflow-api.jass150505.workers.dev/user/${auth.currentUser.uid}`, {
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/user/${auth.currentUser.uid}`, {
           headers: {
             'Authorization': `Bearer ${idToken}`
           }

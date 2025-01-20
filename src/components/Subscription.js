@@ -214,17 +214,19 @@ const Subscription = () => {
       console.log('Payment successful, verifying session:', sessionId);
       const verifySession = async () => {
         try {
-          const response = await fetch(`https://ideaflow-api.jass150505.workers.dev/verify-session`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-              sessionId,
-              userId: auth.currentUser.uid
-            }),
-            mode: 'cors'
-          });
+          const response = await fetch(
+            `${process.env.REACT_APP_API_URL}/verify-session`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                sessionId,
+                userId: auth.currentUser.uid
+              })
+            }
+          );
 
           const data = await response.json();
           console.log('Verify response:', data);
@@ -268,55 +270,28 @@ const Subscription = () => {
     );
   }
 
-  const handleSubscribe = async () => {
+  const handleSubscribe = async (priceId) => {
     try {
       setLoading(true);
-      const stripe = await stripePromise;
       
-      console.log('API URL:', process.env.REACT_APP_API_URL);
-      console.log('Starting subscription process...');
-      
-      if (!stripe) {
-        console.error('Stripe not initialized');
-        throw new Error('Payment system is not available. Please try again later.');
-      }
-      
-      const requestData = {
-        priceId: process.env.REACT_APP_STRIPE_PRICE_ID,
-        userId: auth.currentUser.uid,
-        email: auth.currentUser.email,
-      };
-      
-      console.log('Request data:', requestData);
-      
-      // Create a checkout session using Firebase Function
-      let response;
-      try {
-        console.log('Fetching from:', `${process.env.REACT_APP_API_URL}/create-checkout-session`);
-        response = await fetch('https://ideaflow-api.jass150505.workers.dev/create-checkout-session', {
+      // Create checkout session
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/create-checkout-session`,
+        {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
           },
-          body: JSON.stringify(requestData),
-          mode: 'cors'
-        });
-        console.log('Response received:', response);
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to create checkout session');
+          body: JSON.stringify({
+            priceId,
+            userId: auth.currentUser.uid,
+            email: auth.currentUser.email
+          })
         }
-      } catch (fetchError) {
-        console.error('Network error:', fetchError);
-        throw new Error(`Network error: ${fetchError.message}`);
-      }
+      );
   
-      console.log('Response status:', response.status);
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Error data:', errorData);
         throw new Error(errorData.error || 'Failed to create checkout session');
       }
   
@@ -439,7 +414,7 @@ const Subscription = () => {
             ) : (
               plan.id === 'pro' && (
                 <Button
-                  onClick={handleSubscribe}
+                  onClick={() => handleSubscribe(plan.id)}
                   disabled={loading}
                 >
                   {loading ? 'Processing...' : 'Upgrade Now'}
