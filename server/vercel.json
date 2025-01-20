@@ -8,28 +8,6 @@
   ],
   "routes": [
     {
-      "src": "/create-checkout-session",
-      "methods": ["OPTIONS"],
-      "headers": {
-        "Access-Control-Allow-Origin": "https://ideaflow.uk",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        "Access-Control-Allow-Credentials": "true",
-        "Access-Control-Max-Age": "86400"
-      }
-    },
-    {
-      "src": "/create-checkout-session",
-      "methods": ["POST"],
-      "headers": {
-        "Access-Control-Allow-Origin": "https://ideaflow.uk",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        "Access-Control-Allow-Credentials": "true"
-      },
-      "dest": "index.js"
-    },
-    {
       "src": "/(.*)",
       "headers": {
         "Access-Control-Allow-Origin": "https://ideaflow.uk",
@@ -37,6 +15,15 @@
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
         "Access-Control-Allow-Credentials": "true"
       },
+      "continue": true
+    },
+    {
+      "src": "/create-checkout-session",
+      "methods": ["OPTIONS"],
+      "status": 200
+    },
+    {
+      "src": "/(.*)",
       "dest": "index.js"
     }
   ]

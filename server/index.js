@@ -58,20 +58,16 @@ const authMiddleware = async (req, res, next) => {
 // Apply auth middleware to all routes except health check
 app.use('/api', authMiddleware);
 
-const corsOptions = {
-  origin: 'https://ideaflow.uk',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-  optionsSuccessStatus: 200,
-  maxAge: 86400,
-  preflightContinue: false
-};
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://ideaflow.uk');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-app.use(cors(corsOptions));
-
-// Handle specific route preflight
-app.options('/create-checkout-session', cors(corsOptions));
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
 app.use(express.json());
 
