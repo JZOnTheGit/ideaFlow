@@ -297,11 +297,17 @@ const Subscription = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json'
           },
           body: JSON.stringify(requestData),
           mode: 'cors'
         });
         console.log('Response received:', response);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create checkout session');
+        }
       } catch (fetchError) {
         console.error('Network error:', fetchError);
         throw new Error(`Network error: ${fetchError.message}`);

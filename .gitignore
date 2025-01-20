@@ -19,6 +19,7 @@ node_modules/.cache/
 # misc
 .DS_Store
 .env*
+.env.local
 /server/.env
 /server/serviceAccountKey.json
 
@@ -36,3 +37,6 @@ node_modules/.cache/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# New service account file
+api/service-account.json

@@ -30,12 +30,12 @@ const useSubscription = () => {
 
         setUsage({
           pdfUploads: {
-            used: userData?.limits?.pdfUploads?.used || 0,
-            limit: userData?.limits?.pdfUploads?.limit || 2,
+            used: userData?.limits?.pdfUploads?.used?.integerValue || 0,
+            limit: userData?.limits?.pdfUploads?.limit?.integerValue || 2,
           },
           websiteUploads: {
-            used: userData?.limits?.websiteUploads?.used || 0,
-            limit: userData?.limits?.websiteUploads?.limit || 1,
+            used: userData?.limits?.websiteUploads?.used?.integerValue || 0,
+            limit: userData?.limits?.websiteUploads?.limit?.integerValue || 1,
           },
         });
 
