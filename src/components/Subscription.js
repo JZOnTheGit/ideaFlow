@@ -225,6 +225,7 @@ const Subscription = () => {
       const requestData = {
         priceId: process.env.REACT_APP_STRIPE_PRICE_ID,
         userId: auth.currentUser.uid,
+        email: auth.currentUser.email,
       };
       
       console.log('Request data:', requestData);

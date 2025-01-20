@@ -118,7 +118,7 @@ async function handleWebhook(request, env, stripe, db) {
 
 // Create checkout session endpoint
 async function handleCheckoutSession(request, stripe) {
-  const { priceId, userId } = await request.json();
+  const { priceId, userId, email } = await request.json();
 
   // Get origin or use default
   const origin = request.headers.get('Origin') || 'https://ideaflow.uk';
@@ -134,6 +134,9 @@ async function handleCheckoutSession(request, stripe) {
       success_url: `${origin}/dashboard?success=true`,
       cancel_url: `${origin}/dashboard?canceled=true`,
       client_reference_id: userId,
+      allow_promotion_codes: true,
+      billing_address_collection: 'auto',
+      customer_email: email,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
