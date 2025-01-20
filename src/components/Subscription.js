@@ -363,13 +363,13 @@ const Subscription = () => {
           <UsageBar>
             <UsageProgress 
               $percentage={calculateUsagePercentage(
-                usage?.pdfUploads.used || 0,
-                usage?.pdfUploads.limit || 1
+                usage?.pdfUploads?.used || 0,
+                usage?.pdfUploads?.limit || 1
               )} 
             />
           </UsageBar>
           <UsageText>
-            {usage?.pdfUploads.used || 0} / {usage?.pdfUploads.limit || 0} uploads used
+            {usage?.pdfUploads?.used || 0} / {usage?.pdfUploads?.limit || 0} uploads used
           </UsageText>
         </UsageBlock>
         
@@ -378,20 +378,20 @@ const Subscription = () => {
           <UsageBar>
             <UsageProgress 
               $percentage={calculateUsagePercentage(
-                usage?.websiteUploads.used || 0,
-                usage?.websiteUploads.limit || 1
+                usage?.websiteUploads?.used || 0,
+                usage?.websiteUploads?.limit || 1
               )} 
             />
           </UsageBar>
           <UsageText>
-            {usage?.websiteUploads.used || 0} / {usage?.websiteUploads.limit || 0} links used
+            {usage?.websiteUploads?.used || 0} / {usage?.websiteUploads?.limit || 0} links used
           </UsageText>
         </UsageBlock>
       </UsageSection>
 
       <PlansContainer>
         {Object.values(plans).map((plan) => (
-          <PlanCard key={plan.id} $active={subscription === plan.id}>
+          <PlanCard key={plan.id} $active={subscription?.plan === plan.id}>
             <PlanTitle>{plan.name}</PlanTitle>
             <PlanPrice>
               £{plan.price}<span>/month</span>
@@ -401,7 +401,7 @@ const Subscription = () => {
                 <Feature key={index}>{feature}</Feature>
               ))}
             </FeaturesList>
-            {subscription === plan.id ? (
+            {subscription?.plan === plan.id ? (
               plan.id === 'pro' && (
                 <Button 
                   $secondary 
@@ -414,7 +414,7 @@ const Subscription = () => {
             ) : (
               plan.id === 'pro' && (
                 <Button
-                  onClick={() => handleSubscribe(plan.id)}
+                  onClick={() => handleSubscribe(process.env.REACT_APP_STRIPE_PRICE_ID)}
                   disabled={loading}
                 >
                   {loading ? 'Processing...' : 'Upgrade Now'}

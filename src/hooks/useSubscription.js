@@ -33,6 +33,21 @@ const useSubscription = () => {
 
         const userData = await response.json();
         console.log('Raw user data:', userData);
+        console.log('Setting subscription:', {
+          status: userData.subscriptionStatus || 'inactive',
+          plan: userData.plan || 'free',
+          priceId: userData.priceId,
+        });
+        console.log('Setting usage:', {
+          pdfUploads: {
+            used: parseInt(userData.pdfUploadsUsed || 0),
+            limit: parseInt(userData.pdfUploadsLimit || 2),
+          },
+          websiteUploads: {
+            used: parseInt(userData.websiteUploadsUsed || 0),
+            limit: parseInt(userData.websiteUploadsLimit || 1),
+          },
+        });
 
         setSubscription({
           status: userData.subscriptionStatus || 'inactive',
