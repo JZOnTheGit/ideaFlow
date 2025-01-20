@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getDoc, doc } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import { auth } from '../firebase';
 import { useSubscriptionContext } from '../contexts/SubscriptionContext';
 
 const useSubscription = () => {
@@ -18,29 +17,41 @@ const useSubscription = () => {
       if (!auth.currentUser) return;
 
       try {
-        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
-        const userData = userDoc.data();
-        console.log('Fetched user data:', userData); // Debug log
+        // Get the user's ID token
+        const idToken = await auth.currentUser.getIdToken();
+        
+        // Fetch user data from your API endpoint
+        const response = await fetch(`https://ideaflow-api.jass150505.workers.dev/user/${auth.currentUser.uid}`, {
+          headers: {
+            'Authorization': `Bearer ${idToken}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch subscription data');
+        }
+
+        const userData = await response.json();
+        console.log('Raw user data:', userData);
 
         setSubscription({
-          status: userData?.subscriptionStatus || 'inactive',
-          plan: userData?.plan || 'free',
-          priceId: userData?.priceId,
+          status: userData.subscriptionStatus || 'inactive',
+          plan: userData.plan || 'free',
+          priceId: userData.priceId,
         });
 
         setUsage({
           pdfUploads: {
-            used: userData?.limits?.pdfUploads?.used?.integerValue || 0,
-            limit: userData?.limits?.pdfUploads?.limit?.integerValue || 2,
+            used: parseInt(userData.pdfUploadsUsed || 0),
+            limit: parseInt(userData.pdfUploadsLimit || 2),
           },
           websiteUploads: {
-            used: userData?.limits?.websiteUploads?.used?.integerValue || 0,
-            limit: userData?.limits?.websiteUploads?.limit?.integerValue || 1,
+            used: parseInt(userData.websiteUploadsUsed || 0),
+            limit: parseInt(userData.websiteUploadsLimit || 1),
           },
         });
 
         setLoading(false);
-
       } catch (error) {
         console.error('Error fetching subscription:', error);
         setLoading(false);

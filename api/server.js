@@ -70,20 +70,11 @@ export default {
             customerId: data.customerId ? { stringValue: data.customerId } : { nullValue: null },
             plan: { stringValue: data.plan },
             subscription: { stringValue: data.subscription },
-            limits: { mapValue: { fields: {
-              pdfUploads: { mapValue: { fields: {
-                used: { integerValue: 0 },
-                limit: { integerValue: data.plan === 'pro' ? 80 : 2 }
-              }}},
-              websiteUploads: { mapValue: { fields: {
-                used: { integerValue: 0 },
-                limit: { integerValue: data.plan === 'pro' ? 50 : 1 }
-              }}}
-            }}},
-            usage: { mapValue: { fields: {
-              generationsPerUpload: { integerValue: data.plan === 'pro' ? 3 : 1 },
-              generationsUsed: { mapValue: { fields: {} }}
-            }}}
+            pdfUploadsUsed: { integerValue: 0 },
+            pdfUploadsLimit: { integerValue: data.plan === 'pro' ? 80 : 2 },
+            websiteUploadsUsed: { integerValue: 0 },
+            websiteUploadsLimit: { integerValue: data.plan === 'pro' ? 50 : 1 },
+            generationsPerUpload: { integerValue: data.plan === 'pro' ? 3 : 1 }
           }
         })
       });
@@ -97,6 +88,57 @@ export default {
     }
 
     // Route the request
+    if (request.url.includes('/user/')) {
+      // Extract user ID from URL
+      const userId = request.url.split('/user/')[1];
+      
+      // Verify Firebase ID token
+      const authHeader = request.headers.get('Authorization');
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+      
+      try {
+        // Fetch user data from Firestore
+        const url = `https://firestore.googleapis.com/v1/projects/${env.FIREBASE_PROJECT_ID}/databases/(default)/documents/users/${userId}`;
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${env.FIREBASE_ACCESS_TOKEN}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch user data');
+        }
+        
+        const data = await response.json();
+        
+        // Transform Firestore response to simpler format
+        const userData = {
+          subscriptionStatus: data.fields?.subscriptionStatus?.stringValue || 'inactive',
+          plan: data.fields?.plan?.stringValue || 'free',
+          priceId: data.fields?.priceId?.stringValue,
+          pdfUploadsUsed: parseInt(data.fields?.pdfUploadsUsed?.integerValue || '0'),
+          pdfUploadsLimit: parseInt(data.fields?.pdfUploadsLimit?.integerValue || '2'),
+          websiteUploadsUsed: parseInt(data.fields?.websiteUploadsUsed?.integerValue || '0'),
+          websiteUploadsLimit: parseInt(data.fields?.websiteUploadsLimit?.integerValue || '1')
+        };
+        
+        return new Response(JSON.stringify(userData), {
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+    }
+
     if (request.url.includes('/webhook')) {
       console.log('Handling webhook request');
       return handleWebhook(request, env, stripe);
