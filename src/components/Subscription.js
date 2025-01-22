@@ -293,8 +293,8 @@ const Subscription = () => {
           body: JSON.stringify({
             priceId,
             email: auth.currentUser.email,
-            successUrl: `${window.location.origin}/dashboard/subscription?success=true`,
-            cancelUrl: `${window.location.origin}/dashboard/subscription?canceled=true`
+            successUrl: 'https://ideaflow.uk/dashboard/subscription?success=true',
+            cancelUrl: 'https://ideaflow.uk/dashboard/subscription?canceled=true',
           })
         }
       );
