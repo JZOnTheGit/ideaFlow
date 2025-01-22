@@ -281,9 +281,18 @@ const Subscription = () => {
 
       const idToken = await auth.currentUser.getIdToken(true);
       
-      // Log the URL for debugging
-      const checkoutUrl = `${process.env.REACT_APP_API_URL}/create-checkout-session`;
+      // Ensure we're using the correct API URL
+      const baseUrl = process.env.REACT_APP_API_URL || 'https://idea-flow-server.vercel.app';
+      const checkoutUrl = new URL('/create-checkout-session', baseUrl).href;
       console.log('Making request to:', checkoutUrl);
+      
+      // First check if the endpoint is available
+      try {
+        const checkResponse = await fetch(checkoutUrl);
+        console.log('Endpoint check response:', await checkResponse.text());
+      } catch (error) {
+        console.error('Endpoint check failed:', error);
+      }
       
       const response = await fetch(checkoutUrl, {
         method: 'POST',
