@@ -6,6 +6,7 @@ import { Elements } from '@stripe/react-stripe-js';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { Navigate } from 'react-router-dom';
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY || '', {
   stripeAccount: process.env.REACT_APP_STRIPE_ACCOUNT_ID,
@@ -227,6 +228,10 @@ const Subscription = () => {
   const { currentUser } = useAuth();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  if (!currentUser) {
+    return <Navigate to="/login" state={{ from: '/dashboard/subscription' }} />;
+  }
 
   useEffect(() => {
     if (subscription && usage) {
@@ -546,6 +551,32 @@ const Subscription = () => {
 };
 
 export default function StripeWrapper() {
+  const { currentUser } = useAuth();
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    // Wait for auth to initialize
+    const unsubscribe = useAuth().onAuthStateChanged(() => {
+      setAuthChecked(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  if (!authChecked) {
+    return (
+      <Container>
+        <LoadingContainer>
+          <LoadingSpinner />
+          <LoadingText>Checking authentication...</LoadingText>
+        </LoadingContainer>
+      </Container>
+    );
+  }
+
+  if (!currentUser) {
+    return <Navigate to="/login" state={{ from: '/dashboard/subscription' }} />;
+  }
+
   return (
     <Elements stripe={stripePromise}>
       <Subscription />

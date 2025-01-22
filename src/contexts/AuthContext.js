@@ -36,7 +36,7 @@ const createInitialUserData = (email) => ({
 });
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Check and create user document if it doesn't exist
@@ -95,7 +95,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
-      setUser(user);
+      setCurrentUser(user);
       if (user) {
         ensureUserDocument(user);
       }
@@ -120,7 +120,8 @@ export function AuthProvider({ children }) {
   }
 
   const value = {
-    user,
+    currentUser,
+    loading,
     signInWithGoogle,
     signOut,
     signup
