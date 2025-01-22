@@ -29,14 +29,11 @@ function App() {
 
     // Set CSP
     if (process.env.REACT_APP_CONTENT_SECURITY_POLICY) {
-      const cspValue = process.env.REACT_APP_CONTENT_SECURITY_POLICY
-        .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
-        .trim();  // Remove leading/trailing whitespace
-      
       const meta = document.createElement('meta');
       meta.setAttribute('http-equiv', 'Content-Security-Policy');
-      meta.setAttribute('content', cspValue);
+      meta.setAttribute('content', process.env.REACT_APP_CONTENT_SECURITY_POLICY);
       document.head.appendChild(meta);
+      console.log('CSP applied:', process.env.REACT_APP_CONTENT_SECURITY_POLICY);
     }
   }, []);
 
