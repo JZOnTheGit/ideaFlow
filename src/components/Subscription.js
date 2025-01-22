@@ -282,7 +282,7 @@ const Subscription = () => {
       const idToken = await auth.currentUser.getIdToken(true);
       
       const response = await fetch(
-        'https://idea-flow-server.vercel.app/create-checkout-session',
+        `${process.env.REACT_APP_API_URL}/create-checkout-session`,
         {
           method: 'POST',
           headers: {
@@ -290,11 +290,12 @@ const Subscription = () => {
             'Authorization': `Bearer ${idToken}`
           },
           credentials: 'include',
+          mode: 'cors',
           body: JSON.stringify({
             priceId,
             email: auth.currentUser.email,
             successUrl: 'https://ideaflow.uk/dashboard/subscription?success=true',
-            cancelUrl: 'https://ideaflow.uk/dashboard/subscription?canceled=true',
+            cancelUrl: 'https://ideaflow.uk/dashboard/subscription?canceled=true'
           })
         }
       );
