@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { loadStripe } from '@stripe/stripe-js';
-import { auth } from '../firebase/firebase';
 import { Elements } from '@stripe/react-stripe-js';
 import { useAuth } from '../contexts/AuthContext';
-import firebase from '../firebase/firebase';
+import { db } from '../firebase/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY || '', {
   stripeAccount: process.env.REACT_APP_STRIPE_ACCOUNT_ID,
@@ -186,6 +186,39 @@ const LoadingText = styled.div`
   font-size: 1.1rem;
 `;
 
+const CouponInput = styled.input`
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border: 1px solid rgba(196, 153, 82, 0.3);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  font-size: 14px;
+  transition: all 0.3s;
+
+  &:focus {
+    outline: none;
+    border-color: #c49952;
+  }
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const CouponText = styled.p`
+  color: #c49952;
+  font-size: 12px;
+  margin: 5px 0 15px;
+  text-align: center;
+`;
+
 const Subscription = () => {
   const { subscription, usage, plans, refreshSubscription } = useSubscription();
   const [loading, setLoading] = useState(false);
@@ -258,14 +291,35 @@ const Subscription = () => {
   useEffect(() => {
     const fetchUsage = async () => {
       if (auth.currentUser) {
-        const userRef = firebase.firestore().collection('users').doc(auth.currentUser.uid);
-        const doc = await userRef.get();
-        if (doc.exists) {
-          const userData = doc.data();
-          setUsage({
-            pdfUploads: userData.limits?.pdfUploads || { used: 0, limit: 2 },
-            websiteUploads: userData.limits?.websiteUploads || { used: 0, limit: 1 }
-          });
+        try {
+          const userRef = doc(db, 'users', auth.currentUser.uid);
+          const docSnap = await getDoc(userRef);
+          
+          if (docSnap.exists()) {
+            const userData = docSnap.data();
+            console.log('Fetched user data:', userData); // Debug log
+            
+            // Set default limits if not present
+            const defaultLimits = {
+              pdfUploads: { used: 0, limit: 2 },
+              websiteUploads: { used: 0, limit: 1 }
+            };
+            
+            setUsage({
+              pdfUploads: userData.limits?.pdfUploads || defaultLimits.pdfUploads,
+              websiteUploads: userData.limits?.websiteUploads || defaultLimits.websiteUploads
+            });
+          } else {
+            console.log('No user document found, creating one with default limits');
+            // Set default usage for new users
+            setUsage({
+              pdfUploads: { used: 0, limit: 2 },
+              websiteUploads: { used: 0, limit: 1 }
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching usage:', error);
+          setError('Failed to fetch usage data');
         }
       }
     };
@@ -390,13 +444,13 @@ const Subscription = () => {
           <UsageBar>
             <UsageProgress 
               $percentage={calculateUsagePercentage(
-                usage?.pdfUploads?.used || 0,
-                usage?.pdfUploads?.limit || 1
+                usage?.pdfUploads?.used ?? 0,
+                usage?.pdfUploads?.limit ?? 2
               )} 
             />
           </UsageBar>
           <UsageText>
-            {usage?.pdfUploads?.used || 0} / {usage?.pdfUploads?.limit || 0} uploads used
+            {usage?.pdfUploads?.used ?? 0} / {usage?.pdfUploads?.limit ?? 2} uploads used
           </UsageText>
         </UsageBlock>
         
@@ -405,13 +459,13 @@ const Subscription = () => {
           <UsageBar>
             <UsageProgress 
               $percentage={calculateUsagePercentage(
-                usage?.websiteUploads?.used || 0,
-                usage?.websiteUploads?.limit || 1
+                usage?.websiteUploads?.used ?? 0,
+                usage?.websiteUploads?.limit ?? 1
               )} 
             />
           </UsageBar>
           <UsageText>
-            {usage?.websiteUploads?.used || 0} / {usage?.websiteUploads?.limit || 0} links used
+            {usage?.websiteUploads?.used ?? 0} / {usage?.websiteUploads?.limit ?? 1} links used
           </UsageText>
         </UsageBlock>
       </UsageSection>
@@ -440,12 +494,26 @@ const Subscription = () => {
               )
             ) : (
               plan.id === 'pro' && (
-                <Button
-                  onClick={() => handleSubscribe(process.env.REACT_APP_STRIPE_PRICE_ID)}
-                  disabled={loading}
-                >
-                  {loading ? 'Processing...' : 'Upgrade Now'}
-                </Button>
+                <>
+                  <CouponInput
+                    type="text"
+                    placeholder="Have a coupon code?"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    disabled={loading}
+                  />
+                  {couponCode && (
+                    <CouponText>
+                      Coupon code "{couponCode}" will be applied at checkout
+                    </CouponText>
+                  )}
+                  <Button
+                    onClick={() => handleSubscribe(process.env.REACT_APP_STRIPE_PRICE_ID)}
+                    disabled={loading}
+                  >
+                    {loading ? 'Processing...' : 'Upgrade Now'}
+                  </Button>
+                </>
               )
             )}
           </PlanCard>
@@ -479,15 +547,35 @@ const Subscription = () => {
 
 const CouponInput = styled.input`
   width: 100%;
-  padding: 8px 12px;
+  padding: 12px;
   margin: 10px 0;
-  border: 1px solid #ddd;
+  border: 1px solid rgba(196, 153, 82, 0.3);
   border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
   font-size: 14px;
+  transition: all 0.3s;
+
   &:focus {
     outline: none;
-    border-color: #0066cc;
+    border-color: #c49952;
   }
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const CouponText = styled.p`
+  color: #c49952;
+  font-size: 12px;
+  margin: 5px 0 15px;
+  text-align: center;
 `;
 
 export default function StripeWrapper() {
