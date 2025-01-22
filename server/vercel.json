@@ -9,6 +9,15 @@
   "routes": [
     {
       "src": "/(.*)",
+      "headers": {
+        "Access-Control-Allow-Origin": "https://ideaflow.uk",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+      },
+      "continue": true
+    },
+    {
+      "src": "/(.*)",
       "dest": "index.js"
     }
   ]

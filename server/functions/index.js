@@ -70,4 +70,34 @@ exports.updateSubscription = functions.https.onRequest(async (req, res) => {
     console.error('Error updating subscription:', error);
     res.status(500).json({ error: error.message });
   }
-}); 
+});
+
+exports.onSubscriptionUpdated = functions.firestore
+  .document('users/{userId}')
+  .onUpdate(async (change, context) => {
+    const newData = change.after.data();
+    const previousData = change.before.data();
+
+    // Only process if subscription status changed to 'active'
+    if (newData.subscriptionStatus === 'active' && 
+        previousData.subscriptionStatus !== 'active') {
+      
+      try {
+        await change.after.ref.update({
+          subscription: 'pro',
+          'limits.pdfUploads': {
+            used: 0,
+            limit: 80
+          },
+          'limits.websiteUploads': {
+            used: 0,
+            limit: 50
+          },
+          generationsPerUpload: 3,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      } catch (error) {
+        console.error('Error updating subscription limits:', error);
+      }
+    }
+  }); 

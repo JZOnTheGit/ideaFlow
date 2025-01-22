@@ -280,9 +280,7 @@ const Subscription = () => {
       }
 
       const idToken = await auth.currentUser.getIdToken(true);
-      console.log('Got ID token, making request...');
       
-      // Create checkout session
       const response = await fetch(
         `${process.env.REACT_APP_API_URL}/create-checkout-session`,
         {
@@ -301,29 +299,16 @@ const Subscription = () => {
         }
       );
 
-      if (response.status === 401) {
-        throw new Error('Authentication failed. Please try signing out and back in.');
-      }
-
       if (!response.ok) {
-        const text = await response.text();
-        console.error('Server response:', text);
-        throw new Error(text || 'Failed to create checkout session');
+        const errorData = await response.text();
+        throw new Error(errorData || 'Failed to create checkout session');
       }
 
-      const data = await response.json();
-      console.log('Checkout session created:', data);
-      
-      if (!data.url) {
-        throw new Error('No checkout URL received from server');
-      }
-
-      window.location.href = data.url;
-
+      const { url } = await response.json();
+      window.location.href = url;
     } catch (error) {
-      console.error('Error creating checkout session:', error);
+      console.error('Error:', error);
       setError(error.message);
-      alert(`Failed to create checkout session: ${error.message}`);
     } finally {
       setLoading(false);
     }
