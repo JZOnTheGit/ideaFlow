@@ -224,7 +224,7 @@ const Subscription = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [couponCode, setCouponCode] = useState('');
-  const { auth } = useAuth();
+  const { currentUser } = useAuth();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -260,7 +260,7 @@ const Subscription = () => {
               },
               body: JSON.stringify({
                 sessionId,
-                userId: auth.currentUser.uid
+                userId: currentUser.uid
               })
             }
           );
@@ -286,13 +286,13 @@ const Subscription = () => {
 
       verifySession();
     }
-  }, [auth.currentUser, refreshSubscription]);
+  }, [currentUser, refreshSubscription]);
 
   useEffect(() => {
     const fetchUsage = async () => {
-      if (auth.currentUser) {
+      if (currentUser) {
         try {
-          const userRef = doc(db, 'users', auth.currentUser.uid);
+          const userRef = doc(db, 'users', currentUser.uid);
           const docSnap = await getDoc(userRef);
           
           if (docSnap.exists()) {
@@ -324,7 +324,7 @@ const Subscription = () => {
       }
     };
     fetchUsage();
-  }, [auth.currentUser]);
+  }, [currentUser]);
 
   if (isLoading) {
     return (
@@ -350,11 +350,11 @@ const Subscription = () => {
       setLoading(true);
       setError(null);
       
-      if (!auth.currentUser) {
+      if (!currentUser) {
         throw new Error('Please sign in to upgrade');
       }
 
-      const idToken = await auth.currentUser.getIdToken(true);
+      const idToken = await currentUser.getIdToken(true);
       
       const checkoutUrl = 'https://idea-flow-server.vercel.app/create-checkout-session';
       console.log('Making request to:', checkoutUrl);
@@ -377,7 +377,7 @@ const Subscription = () => {
         mode: 'cors',
         body: JSON.stringify({
           priceId,
-          email: auth.currentUser.email,
+          email: currentUser.email,
           couponCode: couponCode.trim() || undefined,
           successUrl: `${window.location.origin}/dashboard/subscription?success=true`,
           cancelUrl: `${window.location.origin}/dashboard/subscription?canceled=true`
@@ -409,10 +409,10 @@ const Subscription = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await auth.currentUser.getIdToken()}`
+          'Authorization': `Bearer ${await currentUser.getIdToken()}`
         },
         body: JSON.stringify({
-          userId: auth.currentUser.uid,
+          userId: currentUser.uid,
         }),
       });
 
