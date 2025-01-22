@@ -282,16 +282,16 @@ const Subscription = () => {
       const idToken = await auth.currentUser.getIdToken(true);
       
       const response = await fetch(
-        'https://idea-flow-server-92w55bawv-jzonthegits-projects.vercel.app/create-checkout-session',
+        'https://idea-flow-server.vercel.app/create-checkout-session',
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${idToken}`
           },
+          credentials: 'include',
           body: JSON.stringify({
-            priceId: process.env.REACT_APP_STRIPE_PRICE_ID,
-            userId: auth.currentUser.uid,
+            priceId,
             email: auth.currentUser.email,
             successUrl: `${window.location.origin}/dashboard/subscription?success=true`,
             cancelUrl: `${window.location.origin}/dashboard/subscription?canceled=true`
@@ -318,7 +318,7 @@ const Subscription = () => {
     try {
       setLoading(true);
       
-      await fetch(`${process.env.REACT_APP_API_URL}/cancel-subscription`, {
+      await fetch('https://idea-flow-server.vercel.app/cancel-subscription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
