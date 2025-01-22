@@ -545,39 +545,6 @@ const Subscription = () => {
   );
 };
 
-const CouponInput = styled.input`
-  width: 100%;
-  padding: 12px;
-  margin: 10px 0;
-  border: 1px solid rgba(196, 153, 82, 0.3);
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #ffffff;
-  font-size: 14px;
-  transition: all 0.3s;
-
-  &:focus {
-    outline: none;
-    border-color: #c49952;
-  }
-
-  &::placeholder {
-    color: rgba(255, 255, 255, 0.5);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
-
-const CouponText = styled.p`
-  color: #c49952;
-  font-size: 12px;
-  margin: 5px 0 15px;
-  text-align: center;
-`;
-
 export default function StripeWrapper() {
   return (
     <Elements stripe={stripePromise}>
