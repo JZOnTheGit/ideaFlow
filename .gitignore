@@ -16,18 +16,17 @@ node_modules/.cache/
 # production
 /build
 
+# Server (now a separate repo)
+/server
+/ideaflow-server
+
 # misc
 .DS_Store
-.env*
 .env.local
-/server/.env
-/server/serviceAccountKey.json
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
+.env.development.local
+.env.test.local
+.env.production.local
+.env
 
 # OS generated files
 .DS_Store
@@ -38,6 +37,6 @@ node_modules/.cache/
 ehthumbs.db
 Thumbs.db
 
-# New service account file
+# Service account files
 api/service-account.json
 api/serviceAccountKey.json
