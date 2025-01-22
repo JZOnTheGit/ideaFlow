@@ -4,6 +4,8 @@ import { useSubscription } from '../contexts/SubscriptionContext';
 import { loadStripe } from '@stripe/stripe-js';
 import { auth } from '../firebase/firebase';
 import { Elements } from '@stripe/react-stripe-js';
+import { useAuth } from '../contexts/AuthContext';
+import firebase from '../firebase/firebase';
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY || '', {
   stripeAccount: process.env.REACT_APP_STRIPE_ACCOUNT_ID,
@@ -188,6 +190,8 @@ const Subscription = () => {
   const { subscription, usage, plans, refreshSubscription } = useSubscription();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [couponCode, setCouponCode] = useState('');
+  const { auth } = useAuth();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -251,6 +255,23 @@ const Subscription = () => {
     }
   }, [auth.currentUser, refreshSubscription]);
 
+  useEffect(() => {
+    const fetchUsage = async () => {
+      if (auth.currentUser) {
+        const userRef = firebase.firestore().collection('users').doc(auth.currentUser.uid);
+        const doc = await userRef.get();
+        if (doc.exists) {
+          const userData = doc.data();
+          setUsage({
+            pdfUploads: userData.limits?.pdfUploads || { used: 0, limit: 2 },
+            websiteUploads: userData.limits?.websiteUploads || { used: 0, limit: 1 }
+          });
+        }
+      }
+    };
+    fetchUsage();
+  }, [auth.currentUser]);
+
   if (isLoading) {
     return (
       <Container>
@@ -303,6 +324,7 @@ const Subscription = () => {
         body: JSON.stringify({
           priceId,
           email: auth.currentUser.email,
+          couponCode: couponCode.trim() || undefined,
           successUrl: `${window.location.origin}/dashboard/subscription?success=true`,
           cancelUrl: `${window.location.origin}/dashboard/subscription?canceled=true`
         })
@@ -454,6 +476,19 @@ const Subscription = () => {
     </Container>
   );
 };
+
+const CouponInput = styled.input`
+  width: 100%;
+  padding: 8px 12px;
+  margin: 10px 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  &:focus {
+    outline: none;
+    border-color: #0066cc;
+  }
+`;
 
 export default function StripeWrapper() {
   return (
