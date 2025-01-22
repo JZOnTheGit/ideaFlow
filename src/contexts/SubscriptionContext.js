@@ -214,6 +214,7 @@ export function SubscriptionProvider({ children }) {
   const value = {
     subscription,
     usage,
+    setUsage,
     plans,
     loading,
     resetUsage,

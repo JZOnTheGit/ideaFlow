@@ -220,7 +220,7 @@ const CouponText = styled.p`
 `;
 
 const Subscription = () => {
-  const { subscription, usage, plans, refreshSubscription } = useSubscription();
+  const { subscription, usage, setUsage, plans, refreshSubscription } = useSubscription();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [couponCode, setCouponCode] = useState('');
