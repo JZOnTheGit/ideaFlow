@@ -21,20 +21,6 @@ const Subscription = lazy(() => import('./components/Subscription'));
 
 function App() {
   useEffect(() => {
-    // Remove any existing CSP meta tags first
-    const existingCSP = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-    if (existingCSP) {
-      existingCSP.remove();
-    }
-
-    // Set CSP
-    if (process.env.REACT_APP_CONTENT_SECURITY_POLICY) {
-      const meta = document.createElement('meta');
-      meta.setAttribute('http-equiv', 'Content-Security-Policy');
-      meta.setAttribute('content', process.env.REACT_APP_CONTENT_SECURITY_POLICY);
-      document.head.appendChild(meta);
-      console.log('CSP applied:', process.env.REACT_APP_CONTENT_SECURITY_POLICY);
-    }
   }, []);
 
   return (
