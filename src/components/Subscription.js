@@ -282,7 +282,7 @@ const Subscription = () => {
       const idToken = await auth.currentUser.getIdToken(true);
       
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/create-checkout-session`,
+        'https://idea-flow-server-92w55bawv-jzonthegits-projects.vercel.app/create-checkout-session',
         {
           method: 'POST',
           headers: {
