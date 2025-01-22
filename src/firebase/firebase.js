@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -38,6 +38,35 @@ export const updateUsage = async (userId, type) => {
       [`limits.${type}.used`]: db.FieldValue.increment(1)
     });
   });
+};
+
+export const resetUsageLimits = async (userId) => {
+  const userRef = doc(db, 'users', userId);
+  
+  try {
+    const docSnap = await getDoc(userRef);
+    if (docSnap.exists()) {
+      const userData = docSnap.data();
+      const isProUser = userData.subscription === 'pro';
+      
+      await setDoc(userRef, {
+        limits: {
+          pdfUploads: {
+            used: 0,
+            limit: isProUser ? 80 : 2
+          },
+          websiteUploads: {
+            used: 0,
+            limit: isProUser ? 50 : 1
+          }
+        },
+        generationsPerUpload: isProUser ? 3 : 1
+      }, { merge: true });
+    }
+  } catch (error) {
+    console.error('Error resetting usage limits:', error);
+    throw error;
+  }
 };
 
 export default app; 

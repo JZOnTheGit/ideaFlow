@@ -5,7 +5,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Navigate } from 'react-router-dom';
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY || '', {
@@ -310,13 +310,34 @@ const Subscription = () => {
               websiteUploads: { used: 0, limit: 1 }
             };
             
+            // Ensure the database has the correct structure
+            if (!userData.limits) {
+              await setDoc(userRef, {
+                limits: defaultLimits,
+                generationsPerUpload: userData.subscription === 'pro' ? 3 : 1
+              }, { merge: true });
+            }
+            
             setUsage({
               pdfUploads: userData.limits?.pdfUploads || defaultLimits.pdfUploads,
               websiteUploads: userData.limits?.websiteUploads || defaultLimits.websiteUploads
             });
           } else {
             console.log('No user document found, creating one with default limits');
-            // Set default usage for new users
+            // Create new user document with default limits
+            await setDoc(userRef, {
+              email: currentUser.email,
+              subscription: 'free',
+              createdAt: new Date(),
+              limits: {
+                pdfUploads: { used: 0, limit: 2 },
+                websiteUploads: { used: 0, limit: 1 }
+              },
+              generationsPerUpload: 1,
+              stripeCustomerId: null,
+              stripeSubscriptionId: null
+            });
+            
             setUsage({
               pdfUploads: { used: 0, limit: 2 },
               websiteUploads: { used: 0, limit: 1 }

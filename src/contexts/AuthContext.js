@@ -19,7 +19,7 @@ const createInitialUserData = (email) => ({
   email,
   subscription: 'free',
   createdAt: new Date(),
-  usage: {
+  limits: {
     pdfUploads: {
       used: 0,
       limit: 2
@@ -28,9 +28,8 @@ const createInitialUserData = (email) => ({
       used: 0,
       limit: 1
     },
-    generationsPerUpload: 1,
-    generationsUsed: {}
   },
+  generationsPerUpload: 1,
   stripeCustomerId: null,
   stripeSubscriptionId: null
 });
@@ -61,7 +60,7 @@ export function AuthProvider({ children }) {
         email: result.user.email,
         subscription: 'free',
         createdAt: new Date(),
-        usage: {
+        limits: {
           pdfUploads: {
             used: 0,
             limit: 2
@@ -70,12 +69,11 @@ export function AuthProvider({ children }) {
             used: 0,
             limit: 1
           },
-          generationsPerUpload: 1,
-          generationsUsed: {}
         },
+        generationsPerUpload: 1,
         stripeCustomerId: null,
         stripeSubscriptionId: null
-      }, { merge: true }); // Use merge to prevent overwriting if user already exists
+      }, { merge: true });
 
       return result;
     } catch (error) {
