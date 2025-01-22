@@ -281,31 +281,34 @@ const Subscription = () => {
 
       const idToken = await auth.currentUser.getIdToken(true);
       
-      const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/create-checkout-session`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${idToken}`
-          },
-          credentials: 'include',
-          mode: 'cors',
-          body: JSON.stringify({
-            priceId,
-            email: auth.currentUser.email,
-            successUrl: 'https://ideaflow.uk/dashboard/subscription?success=true',
-            cancelUrl: 'https://ideaflow.uk/dashboard/subscription?canceled=true'
-          })
-        }
-      );
+      // Log the URL for debugging
+      const checkoutUrl = `${process.env.REACT_APP_API_URL}/create-checkout-session`;
+      console.log('Making request to:', checkoutUrl);
+      
+      const response = await fetch(checkoutUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        credentials: 'include',
+        mode: 'cors',
+        body: JSON.stringify({
+          priceId,
+          email: auth.currentUser.email,
+          successUrl: `${window.location.origin}/dashboard/subscription?success=true`,
+          cancelUrl: `${window.location.origin}/dashboard/subscription?canceled=true`
+        })
+      });
 
       if (!response.ok) {
         const errorData = await response.text();
+        console.error('Server response:', errorData);  // Add error logging
         throw new Error(errorData || 'Failed to create checkout session');
       }
 
       const { url } = await response.json();
+      console.log('Redirecting to:', url);  // Add redirect logging
       window.location.href = url;
     } catch (error) {
       console.error('Error:', error);
@@ -319,7 +322,7 @@ const Subscription = () => {
     try {
       setLoading(true);
       
-      await fetch('https://idea-flow-server.vercel.app/cancel-subscription', {
+      await fetch(`${process.env.REACT_APP_API_URL}/cancel-subscription`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
