@@ -281,9 +281,11 @@ const Subscription = () => {
 
       const idToken = await auth.currentUser.getIdToken(true);
       
-      // Ensure we're using the correct API URL
+      // Construct the URL properly
       const baseUrl = process.env.REACT_APP_API_URL || 'https://idea-flow-server.vercel.app';
-      const checkoutUrl = new URL('/create-checkout-session', baseUrl).href;
+      const checkoutUrl = baseUrl.endsWith('/')
+        ? `${baseUrl}create-checkout-session`
+        : `${baseUrl}/create-checkout-session`;
       console.log('Making request to:', checkoutUrl);
       
       // First check if the endpoint is available
