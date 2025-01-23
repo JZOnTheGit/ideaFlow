@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import { Routes, Route, Navigate } from 'react-router-dom';
@@ -6,6 +6,7 @@ import { GlobalStyle } from './components/styles/GlobalStyle';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingSpinner from './components/LoadingSpinner';
+import { auth } from './firebase/firebase';
 
 // Lazy load components
 const LandingPage = lazy(() => import('./components/LandingPage'));
@@ -18,6 +19,23 @@ const History = lazy(() => import('./components/History'));
 const ResetPassword = lazy(() => import('./components/ResetPassword'));
 const AccountTerminated = lazy(() => import('./components/AccountTerminated'));
 const Subscription = lazy(() => import('./components/Subscription'));
+
+function PrivateRoute({ children }) {
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setIsAuthenticated(!!user);
+      setAuthChecked(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  if (!authChecked) return null;
+
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+}
 
 function App() {
   useEffect(() => {
@@ -35,13 +53,14 @@ function App() {
                 <Route path="/login" element={<Auth />} />
                 <Route path="/signup" element={<Auth isSignUp />} />
                 <Route path="/verify-email" element={<EmailVerification />} />
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}>
-                  <Route index element={<Navigate to="upload" replace />} />
-                  <Route path="upload" element={<PDFUpload />} />
-                  <Route path="history" element={<History />} />
-                  <Route path="settings" element={<Settings />} />
-                  <Route path="subscription" element={<Subscription />} />
-                </Route>
+                <Route 
+                  path="/dashboard/*" 
+                  element={
+                    <PrivateRoute>
+                      <Dashboard />
+                    </PrivateRoute>
+                  } 
+                />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/account-terminated" element={<AccountTerminated />} />
               </Routes>

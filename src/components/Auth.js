@@ -205,16 +205,6 @@ const Auth = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
 
-  useEffect(() => {
-    // Check if user is already logged in
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        window.location.href = '/dashboard';
-      }
-    });
-    return () => unsubscribe();
-  }, [navigate]);
-
   const validateForm = () => {
     const errors = {};
     const emailError = validateEmail(email);
@@ -241,15 +231,13 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        // Login
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        navigate('/dashboard');
+        await signInWithEmailAndPassword(auth, email, password);
+        navigate('/dashboard', { replace: true });
       } else {
-        // Sign up
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await sendEmailVerification(userCredential.user);
         setVerificationEmail(email);
-        navigate('/verify-email');
+        navigate('/verify-email', { replace: true });
       }
     } catch (error) {
       console.error('Auth error:', error);
@@ -280,7 +268,7 @@ const Auth = () => {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
       }
     } catch (error) {
       console.error('Google sign-in error:', error);
