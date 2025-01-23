@@ -222,7 +222,15 @@ const CouponText = styled.p`
 `;
 
 const Subscription = () => {
-  const { subscription, usage, setUsage, plans, refreshSubscription } = useSubscription();
+  const { 
+    subscription, 
+    usage = {
+      pdfUploads: { used: 0, limit: 2 },
+      websiteUploads: { used: 0, limit: 1 }
+    }, 
+    plans = [], 
+    refreshSubscription = () => {} 
+  } = useSubscription();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [couponCode, setCouponCode] = useState('');
@@ -315,10 +323,7 @@ const Subscription = () => {
               }, { merge: true });
             }
             
-            setUsage({
-              pdfUploads: userData.limits?.pdfUploads || defaultLimits.pdfUploads,
-              websiteUploads: userData.limits?.websiteUploads || defaultLimits.websiteUploads
-            });
+            refreshSubscription();
           } else {
             console.log('No user document found, creating one with default limits');
             // Create new user document with default limits
@@ -335,10 +340,7 @@ const Subscription = () => {
               stripeSubscriptionId: null
             });
             
-            setUsage({
-              pdfUploads: { used: 0, limit: 2 },
-              websiteUploads: { used: 0, limit: 1 }
-            });
+            refreshSubscription();
           }
         } catch (error) {
           console.error('Error fetching usage:', error);
@@ -347,7 +349,7 @@ const Subscription = () => {
       }
     };
     fetchUsage();
-  }, [currentUser, setUsage]);
+  }, [currentUser, refreshSubscription]);
 
   if (!currentUser) {
     return <Navigate to="/login" state={{ from: '/dashboard/subscription' }} />;

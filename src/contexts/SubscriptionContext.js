@@ -28,6 +28,43 @@ export function SubscriptionProvider({ children }) {
   });
   const [loading, setLoading] = useState(true);
 
+  const plans = [
+    {
+      id: 'free',
+      name: 'Free Plan',
+      price: '0',
+      features: [
+        '2 PDF uploads per day',
+        '1 website link per day',
+        '1 generation per content type',
+        'Basic features'
+      ]
+    },
+    {
+      id: 'pro',
+      name: 'Pro Plan',
+      price: '15',
+      features: [
+        '80 PDF uploads per month',
+        '50 website uploads per month',
+        '3 generations per content type',
+        'Priority support',
+        'Advanced features'
+      ]
+    }
+  ];
+
+  const refreshSubscription = () => {
+    // Trigger a refresh of the subscription data
+    const userRef = doc(db, 'users', auth.currentUser?.uid);
+    getDoc(userRef).then((doc) => {
+      if (doc.exists()) {
+        setSubscription(doc.data().subscription);
+        setUsage(doc.data().limits);
+      }
+    });
+  };
+
   useEffect(() => {
     if (!auth.currentUser) {
       console.log('No user logged in');
@@ -110,6 +147,9 @@ export function SubscriptionProvider({ children }) {
     subscription,
     usage,
     loading,
+    plans,
+    setUsage,
+    refreshSubscription,
     checkUploadLimit,
     incrementUploadCount,
     checkGenerationLimit,
