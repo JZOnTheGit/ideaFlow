@@ -207,18 +207,14 @@ const Auth = () => {
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
+    // Check if user is already logged in
     const unsubscribe = auth.onAuthStateChanged((user) => {
-      console.log('Auth state changed:', user);
-      setCurrentUser(user);
+      if (user) {
+        navigate('/dashboard', { replace: true });
+      }
     });
     return () => unsubscribe();
-  }, []);
-
-  // If user is already logged in, redirect to dashboard
-  if (currentUser) {
-    console.log('User is authenticated, redirecting to dashboard');
-    return <Navigate to="/dashboard" replace />;
-  }
+  }, [navigate]);
 
   const validateForm = () => {
     const errors = {};
@@ -243,44 +239,20 @@ const Auth = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    console.log('Starting auth process...', { isLogin, email });
 
     try {
       if (isLogin) {
-        console.log('Attempting login...');
+        // Login
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         console.log('Login successful:', userCredential.user);
-        
-        const userRef = doc(db, 'users', userCredential.user.uid);
-        const userDoc = await getDoc(userRef);
-        if (!userDoc.exists()) {
-          console.log('Creating user document for existing user');
-          await setDoc(userRef, {
-            email: userCredential.user.email,
-            subscription: 'free',
-            createdAt: new Date(),
-            limits: {
-              pdfUploads: { used: 0, limit: 2 },
-              websiteUploads: { used: 0, limit: 1 }
-            },
-            generationsPerUpload: 1,
-            stripeCustomerId: null,
-            stripeSubscriptionId: null
-          });
-        }
-        
-        console.log('Navigating to dashboard...');
-        setIsNavigating(true);
         navigate('/dashboard', { replace: true });
-        return;
       } else {
-        console.log('Attempting signup...');
+        // Sign up
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        console.log('Signup successful:', userCredential.user);
         await sendEmailVerification(userCredential.user);
         setVerificationEmail(email);
-
-        console.log('Creating user document...');
+        
+        // Create user document
         await setDoc(doc(db, 'users', userCredential.user.uid), {
           email: userCredential.user.email,
           subscription: 'free',
@@ -294,17 +266,10 @@ const Auth = () => {
           stripeSubscriptionId: null
         });
 
-        console.log('Navigating to verify email...');
-        setIsNavigating(true);
         navigate('/verify-email', { replace: true });
-        return <Navigate to="/verify-email" replace />;
       }
     } catch (error) {
-      console.error('Auth error details:', { 
-        code: error.code, 
-        message: error.message, 
-        fullError: error 
-      });
+      console.error('Auth error:', error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -329,13 +294,11 @@ const Auth = () => {
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
-      console.log('Starting Google sign-in...');
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      console.log('Google sign-in successful:', result.user);
-
+      
       if (result.user) {
-        console.log('Creating/updating user document...');
+        // Create/update user document
         await setDoc(doc(db, 'users', result.user.uid), {
           email: result.user.email,
           subscription: 'free',
@@ -349,17 +312,10 @@ const Auth = () => {
           stripeSubscriptionId: null
         }, { merge: true });
 
-        console.log('Navigating to dashboard...');
-        setIsNavigating(true);
         navigate('/dashboard', { replace: true });
-        return;
       }
     } catch (error) {
-      console.error('Google sign-in error details:', {
-        code: error.code,
-        message: error.message,
-        fullError: error
-      });
+      console.error('Google sign-in error:', error);
       setError(error.message);
     } finally {
       setLoading(false);
