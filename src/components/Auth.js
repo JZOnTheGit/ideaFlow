@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { auth, db } from '../firebase/firebase';
 import { 
   signInWithEmailAndPassword, 
@@ -204,17 +204,21 @@ const Auth = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const navigate = useNavigate();
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user && !isNavigating) {
-        console.log('User is authenticated, redirecting to dashboard');
-        setIsNavigating(true);
-        navigate('/dashboard');
-      }
+      console.log('Auth state changed:', user);
+      setCurrentUser(user);
     });
     return () => unsubscribe();
-  }, [navigate, isNavigating]);
+  }, []);
+
+  // If user is already logged in, redirect to dashboard
+  if (currentUser) {
+    console.log('User is authenticated, redirecting to dashboard');
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const validateForm = () => {
     const errors = {};
@@ -293,7 +297,7 @@ const Auth = () => {
         console.log('Navigating to verify email...');
         setIsNavigating(true);
         navigate('/verify-email', { replace: true });
-        return;
+        return <Navigate to="/verify-email" replace />;
       }
     } catch (error) {
       console.error('Auth error details:', { 
