@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { collection, addDoc, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase/firebase';
 import { generateContent } from '../services/aiService';
-import { useSubscription } from '../contexts/SubscriptionContext';
+import { useSubscription } from '../hooks/useSubscription';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // Import PDF.js properly
@@ -425,29 +425,11 @@ const PDFUpload = () => {
 
       console.log('Current user:', auth.currentUser?.uid);
 
-      // Debug: Check upload limits before proceeding
-      const userRef = doc(db, 'users', auth.currentUser.uid);
-      const userDoc = await getDoc(userRef);
-      console.log('User document data:', userDoc.data());
-      
-      if (!userDoc.exists()) {
-        console.log('Creating new user document with initial limits');
-        await setDoc(userRef, {
-          limits: {
-            pdfUploads: { used: 0, limit: 2 },
-            websiteUploads: { used: 0, limit: 1 }
-          },
-          subscription: 'free'
-        });
-      }
-      
-      const userData = userDoc.data();
-      console.log('Current PDF upload limits:', userData?.limits?.pdfUploads);
-
+      // Use the checkUploadLimit from subscription context
       const canUpload = await checkUploadLimit('pdf');
       console.log('Can upload check result:', canUpload);
+      
       if (!canUpload) {
-        console.log('Upload limit reached according to check');
         setError('Daily PDF upload limit reached. Upgrade to Pro for more uploads!');
         return;
       }
@@ -477,6 +459,7 @@ const PDFUpload = () => {
       console.log('Saved to Firestore with ID:', docRef.id);
 
       // After successful upload, update limits
+      const userRef = doc(db, 'users', auth.currentUser.uid);
       const updatedDoc = await getDoc(userRef);
       const updatedData = updatedDoc.data();
       console.log('Current limits before update:', updatedData?.limits);
