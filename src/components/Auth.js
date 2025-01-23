@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../firebase/firebase';
 import { 
@@ -9,7 +9,7 @@ import {
   GoogleAuthProvider,
   sendPasswordResetEmail
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import styled from 'styled-components';
 import '../styles/stars.css';
 import { validateEmail, validatePassword, validatePasswordMatch } from '../utils/validation';
@@ -190,6 +190,7 @@ const checkPasswordStrength = (pass) => {
 };
 
 const Auth = () => {
+  const [isNavigating, setIsNavigating] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [isReset, setIsReset] = useState(false);
   const [email, setEmail] = useState('');
@@ -203,6 +204,17 @@ const Auth = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user && !isNavigating) {
+        console.log('User is authenticated, redirecting to dashboard');
+        setIsNavigating(true);
+        navigate('/dashboard');
+      }
+    });
+    return () => unsubscribe();
+  }, [navigate, isNavigating]);
 
   const validateForm = () => {
     const errors = {};
@@ -226,76 +238,70 @@ const Auth = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setIsSuccess(false);
-    
-    const limiter = isReset ? resetLimiter : authLimiter;
-    if (limiter.isRateLimited(email)) {
-      const remainingTime = limiter.getRemainingTime(email);
-      setError(`Too many attempts. Please try again in ${Math.ceil(remainingTime / 1000)} seconds.`);
-      return;
-    }
-
-    if (!validateForm()) {
-      return;
-    }
-
     setLoading(true);
+    console.log('Starting auth process...', { isLogin, email });
 
     try {
-      if (isReset) {
-        await sendPasswordResetEmail(auth, email);
-        setError('Password reset email sent! Check your inbox.');
-        setIsSuccess(true);
-        return;
-      }
-
-      if (!isLogin && password !== confirmPassword) {
-        throw new Error('Passwords do not match');
-      }
-
-      if (!isLogin && passwordStrength === 'weak') {
-        throw new Error('Password is too weak. Include uppercase, lowercase, numbers, and special characters.');
-      }
-
       if (isLogin) {
+        console.log('Attempting login...');
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        if (!userCredential.user.emailVerified) {
-          setIsVerification(true);
-          setVerificationEmail(email);
-          await sendEmailVerification(userCredential.user);
-          navigate('/verify-email');
-        } else {
-          navigate('/dashboard');
+        console.log('Login successful:', userCredential.user);
+        
+        const userRef = doc(db, 'users', userCredential.user.uid);
+        const userDoc = await getDoc(userRef);
+        if (!userDoc.exists()) {
+          console.log('Creating user document for existing user');
+          await setDoc(userRef, {
+            email: userCredential.user.email,
+            subscription: 'free',
+            createdAt: new Date(),
+            limits: {
+              pdfUploads: { used: 0, limit: 2 },
+              websiteUploads: { used: 0, limit: 1 }
+            },
+            generationsPerUpload: 1,
+            stripeCustomerId: null,
+            stripeSubscriptionId: null
+          });
         }
+        
+        console.log('Navigating to dashboard...');
+        setIsNavigating(true);
+        navigate('/dashboard', { replace: true });
+        return;
       } else {
+        console.log('Attempting signup...');
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        console.log('Signup successful:', userCredential.user);
         await sendEmailVerification(userCredential.user);
-        setIsVerification(true);
         setVerificationEmail(email);
-        navigate('/verify-email');
+
+        console.log('Creating user document...');
         await setDoc(doc(db, 'users', userCredential.user.uid), {
           email: userCredential.user.email,
           subscription: 'free',
           createdAt: new Date(),
           limits: {
-            pdfUploads: {
-              used: 0,
-              limit: 2
-            },
-            websiteUploads: {
-              used: 0,
-              limit: 1
-            }
+            pdfUploads: { used: 0, limit: 2 },
+            websiteUploads: { used: 0, limit: 1 }
           },
           generationsPerUpload: 1,
           stripeCustomerId: null,
           stripeSubscriptionId: null
-        }, { merge: true });
+        });
+
+        console.log('Navigating to verify email...');
+        setIsNavigating(true);
+        navigate('/verify-email', { replace: true });
+        return;
       }
     } catch (error) {
-      console.error('Auth error:', error);
+      console.error('Auth error details:', { 
+        code: error.code, 
+        message: error.message, 
+        fullError: error 
+      });
       setError(error.message);
-      setIsSuccess(false);
     } finally {
       setLoading(false);
     }
@@ -319,31 +325,37 @@ const Auth = () => {
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
+      console.log('Starting Google sign-in...');
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
+      console.log('Google sign-in successful:', result.user);
+
       if (result.user) {
+        console.log('Creating/updating user document...');
         await setDoc(doc(db, 'users', result.user.uid), {
           email: result.user.email,
           subscription: 'free',
           createdAt: new Date(),
           limits: {
-            pdfUploads: {
-              used: 0,
-              limit: 2
-            },
-            websiteUploads: {
-              used: 0,
-              limit: 1
-            }
+            pdfUploads: { used: 0, limit: 2 },
+            websiteUploads: { used: 0, limit: 1 }
           },
           generationsPerUpload: 1,
           stripeCustomerId: null,
           stripeSubscriptionId: null
         }, { merge: true });
-        navigate('/dashboard');
+
+        console.log('Navigating to dashboard...');
+        setIsNavigating(true);
+        navigate('/dashboard', { replace: true });
+        return;
       }
     } catch (error) {
-      console.error('Google sign-in error:', error);
+      console.error('Google sign-in error details:', {
+        code: error.code,
+        message: error.message,
+        fullError: error
+      });
       setError(error.message);
     } finally {
       setLoading(false);
