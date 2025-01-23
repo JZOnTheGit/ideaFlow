@@ -662,64 +662,6 @@ const PDFUpload = () => {
     return Object.values(generating).some(status => status);
   };
 
-  // Add a helper function to check upload limits
-  const checkUploadLimit = async (type) => {
-    try {
-      const userRef = doc(db, 'users', auth.currentUser.uid);
-      const userDoc = await getDoc(userRef);
-      const userData = userDoc.data();
-      
-      console.log('Checking upload limits:', {
-        type,
-        userData: userData?.limits?.[`${type}Uploads`],
-        exists: userDoc.exists()
-      });
-      
-      if (!userDoc.exists()) {
-        console.log('Initializing user limits');
-        await setDoc(userRef, {
-          limits: {
-            pdfUploads: { used: 0, limit: 2 },
-            websiteUploads: { used: 0, limit: 1 }
-          },
-          subscription: 'free'
-        }, { merge: true });
-        return true;
-      }
-      
-      // Safely access nested properties
-      const limits = userData?.limits?.[`${type}Uploads`];
-      console.log('Current limits:', limits);
-      
-      if (!limits) {
-        console.log('No limits found, initializing...');
-        await updateDoc(userRef, {
-          [`limits.${type}Uploads`]: {
-            used: 0,
-            limit: type === 'pdf' ? 2 : 1
-          }
-        });
-        return true;
-      }
-      
-      // Explicitly check the values
-      const used = Number(limits.used) || 0;
-      const limit = Number(limits.limit) || (type === 'pdf' ? 2 : 1);
-      const canUpload = used < limit;
-      
-      console.log('Upload check:', {
-        used,
-        limit,
-        canUpload
-      });
-      
-      return canUpload;
-    } catch (error) {
-      console.error('Error checking upload limit:', error);
-      return false;
-    }
-  };
-
   return (
     <UploadContainer>
       <UploadTypeSwitch>
