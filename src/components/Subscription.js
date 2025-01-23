@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { useSubscription } from '../contexts/SubscriptionContext';
+import { useSubscriptionContext } from '../contexts/SubscriptionContext';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { useAuth } from '../contexts/AuthContext';
@@ -222,7 +222,7 @@ const CouponText = styled.p`
 `;
 
 const Subscription = () => {
-  const { subscription, usage, setUsage, plans, refreshSubscription } = useSubscription();
+  const { subscription, usage, setUsage, plans, refreshSubscription } = useSubscriptionContext();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [couponCode, setCouponCode] = useState('');
