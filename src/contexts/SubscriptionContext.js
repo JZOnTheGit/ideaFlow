@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { auth, db } from '../firebase/firebase';
 import { doc, onSnapshot, setDoc, getDoc, updateDoc, increment } from 'firebase/firestore';
 
@@ -27,6 +27,7 @@ export function SubscriptionProvider({ children }) {
     generationsUsed: {}
   });
   const [loading, setLoading] = useState(true);
+  const unsubscribeRef = useRef();
 
   const plans = [
     {
@@ -54,75 +55,64 @@ export function SubscriptionProvider({ children }) {
     }
   ];
 
-  const refreshSubscription = () => {
-    // Trigger a refresh of the subscription data
-    const userRef = doc(db, 'users', auth.currentUser?.uid);
-    getDoc(userRef).then((doc) => {
-      if (doc.exists()) {
-        setSubscription(doc.data().subscription);
-        setUsage(doc.data().limits);
-      }
-    });
-  };
+  const initializeUser = useCallback(async () => {
+    if (!auth.currentUser) return;
 
-  // Memoize the initializeUser function
-  const initializeUser = useCallback(async (userRef) => {
-    try {
-      const docSnap = await getDoc(userRef);
-      
-      if (!docSnap.exists()) {
-        await setDoc(userRef, {
-          email: auth.currentUser.email,
-          subscription: 'free',
-          limits: {
-            pdfUploads: { used: 0, limit: 2 },
-            websiteUploads: { used: 0, limit: 1 }
-          },
-          generationsPerUpload: 1
-        });
-        return;
-      }
-      
-      const userData = docSnap.data();
-      if (!userData.limits) {
-        await setDoc(userRef, {
-          limits: {
-            pdfUploads: { used: 0, limit: 2 },
-            websiteUploads: { used: 0, limit: 1 }
-          }
-        }, { merge: true });
-      }
-    } catch (error) {
-      console.error('Error initializing user:', error);
+    const userRef = doc(db, 'users', auth.currentUser.uid);
+    const docSnap = await getDoc(userRef);
+
+    if (!docSnap.exists()) {
+      await setDoc(userRef, {
+        email: auth.currentUser.email,
+        subscription: 'free',
+        limits: {
+          pdfUploads: { used: 0, limit: 2 },
+          websiteUploads: { used: 0, limit: 1 }
+        },
+        generationsPerUpload: 1
+      });
+    } else if (!docSnap.data().limits) {
+      await setDoc(userRef, {
+        limits: {
+          pdfUploads: { used: 0, limit: 2 },
+          websiteUploads: { used: 0, limit: 1 }
+        }
+      }, { merge: true });
     }
+
+    return userRef;
   }, []);
 
   useEffect(() => {
     if (!auth.currentUser) {
-      console.log('No user logged in');
       setLoading(false);
       return;
     }
 
-    console.log('Setting up subscription listener for:', auth.currentUser.uid);
-    const userRef = doc(db, 'users', auth.currentUser.uid);
+    let isMounted = true;
 
-    // Initialize user data once
-    initializeUser(userRef).then(() => {
-      // Set up listener only after initialization
-      let unsubscribe;
-      unsubscribe = onSnapshot(userRef, (doc) => {
-        if (doc.exists()) {
+    const setupSubscription = async () => {
+      try {
+        const userRef = await initializeUser();
+        
+        if (!isMounted) return;
+
+        // Clean up previous subscription if it exists
+        if (unsubscribeRef.current) {
+          unsubscribeRef.current();
+        }
+
+        unsubscribeRef.current = onSnapshot(userRef, (doc) => {
+          if (!doc.exists() || !isMounted) return;
+
           const userData = doc.data();
-          console.log('Subscription data updated:', userData);
-          // Only update if data has changed
           setSubscription(prev => {
             if (prev !== userData.subscription) {
               return userData.subscription;
             }
             return prev;
           });
-          
+
           setUsage(prev => {
             const newLimits = userData.limits || {
               pdfUploads: { used: 0, limit: 2 },
@@ -133,16 +123,25 @@ export function SubscriptionProvider({ children }) {
             }
             return prev;
           });
-        }
-        setLoading(false);
-      });
 
-      return () => {
-        if (unsubscribe) {
-          unsubscribe();
+          setLoading(false);
+        });
+      } catch (error) {
+        console.error('Error setting up subscription:', error);
+        if (isMounted) {
+          setLoading(false);
         }
-      };
-    });
+      }
+    };
+
+    setupSubscription();
+
+    return () => {
+      isMounted = false;
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+      }
+    };
   }, [auth.currentUser?.uid, initializeUser]);
 
   const checkUploadLimit = async (type) => {
@@ -186,7 +185,6 @@ export function SubscriptionProvider({ children }) {
     loading,
     plans,
     setUsage,
-    refreshSubscription,
     checkUploadLimit,
     incrementUploadCount,
     checkGenerationLimit,
