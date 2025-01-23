@@ -55,7 +55,6 @@ function App() {
                 <Route path="/signup" element={<Auth isSignUp />} />
                 <Route path="/verify-email" element={<EmailVerification />} />
                 <Route path="/dashboard" element={<Dashboard />}>
-                  <Route index element={<DashboardHome />} />
                   <Route path="upload" element={<Upload />} />
                   <Route path="history" element={<History />} />
                   <Route path="subscription" element={<Subscription />} />
@@ -63,6 +62,7 @@ function App() {
                 </Route>
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/account-terminated" element={<AccountTerminated />} />
+                <Route path="/" element={<Navigate to="/login" replace />} />
               </Routes>
             </Suspense>
           </ErrorBoundary>
