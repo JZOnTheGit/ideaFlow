@@ -13,7 +13,6 @@ import EmailVerification from './components/EmailVerification';
 import ResetPassword from './components/ResetPassword';
 import AccountTerminated from './components/AccountTerminated';
 import Subscription from './components/Subscription';
-import DashboardHome from './components/DashboardHome';
 
 // Lazy load components
 const LandingPage = lazy(() => import('./components/LandingPage'));
