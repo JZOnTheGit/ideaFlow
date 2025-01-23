@@ -386,16 +386,19 @@ const Subscription = () => {
       const idToken = await currentUser.getIdToken(true);
       
       const checkoutUrl = 'https://idea-flow-server.vercel.app/create-checkout-session';
-      console.log('Making request to:', checkoutUrl);
       
-      // First check if the endpoint is available
-      try {
-        const checkResponse = await fetch(checkoutUrl);
-        console.log('Endpoint check response:', await checkResponse.text());
-      } catch (error) {
-        console.error('Endpoint check failed:', error);
+      // Only include couponCode if it's not empty
+      const requestBody = {
+        priceId,
+        email: currentUser.email,
+        successUrl: `${window.location.origin}/dashboard/subscription?success=true`,
+        cancelUrl: `${window.location.origin}/dashboard/subscription?canceled=true`
+      };
+      
+      if (couponCode.trim()) {
+        requestBody.couponCode = couponCode.trim();
       }
-      
+
       const response = await fetch(checkoutUrl, {
         method: 'POST',
         headers: {
@@ -404,27 +407,26 @@ const Subscription = () => {
         },
         credentials: 'include',
         mode: 'cors',
-        body: JSON.stringify({
-          priceId,
-          email: currentUser.email,
-          couponCode: couponCode.trim() || undefined,
-          successUrl: `${window.location.origin}/dashboard/subscription?success=true`,
-          cancelUrl: `${window.location.origin}/dashboard/subscription?canceled=true`
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('Server response:', errorData);  // Add error logging
+        console.error('Server response:', errorData);
+        if (errorData.includes('coupon')) {
+          throw new Error('Invalid coupon code');
+        }
         throw new Error(errorData || 'Failed to create checkout session');
       }
 
       const { url } = await response.json();
-      console.log('Redirecting to:', url);  // Add redirect logging
       window.location.href = url;
     } catch (error) {
       console.error('Error:', error);
       setError(error.message);
+      if (error.message.includes('coupon')) {
+        setCouponCode(''); // Clear invalid coupon code
+      }
     } finally {
       setLoading(false);
     }
