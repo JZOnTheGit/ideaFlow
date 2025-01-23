@@ -7,6 +7,11 @@ import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingSpinner from './components/LoadingSpinner';
 import { auth } from './firebase/firebase';
+import Upload from './components/Upload';
+import History from './components/History';
+import Settings from './components/Settings';
+import Subscription from './components/Subscription';
+import DashboardHome from './components/DashboardHome';
 
 // Lazy load components
 const LandingPage = lazy(() => import('./components/LandingPage'));
@@ -53,14 +58,13 @@ function App() {
                 <Route path="/login" element={<Auth />} />
                 <Route path="/signup" element={<Auth isSignUp />} />
                 <Route path="/verify-email" element={<EmailVerification />} />
-                <Route 
-                  path="/dashboard/*" 
-                  element={
-                    <PrivateRoute>
-                      <Dashboard />
-                    </PrivateRoute>
-                  } 
-                />
+                <Route path="/dashboard" element={<Dashboard />}>
+                  <Route index element={<DashboardHome />} />
+                  <Route path="upload" element={<Upload />} />
+                  <Route path="history" element={<History />} />
+                  <Route path="subscription" element={<Subscription />} />
+                  <Route path="settings" element={<Settings />} />
+                </Route>
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/account-terminated" element={<AccountTerminated />} />
               </Routes>

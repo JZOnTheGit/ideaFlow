@@ -66,6 +66,7 @@ const MainContent = styled.div`
   padding: 2rem;
   margin-left: ${props => props.$sidebarOpen ? '250px' : '0'};
   transition: margin-left 0.3s ease;
+  background: #1a1a1a;
 
   @media (max-width: 768px) {
     margin-left: 0;
