@@ -229,10 +229,6 @@ const Subscription = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  if (!currentUser) {
-    return <Navigate to="/login" state={{ from: '/dashboard/subscription' }} />;
-  }
-
   useEffect(() => {
     if (subscription && usage) {
       setIsLoading(false);
@@ -350,7 +346,11 @@ const Subscription = () => {
       }
     };
     fetchUsage();
-  }, [currentUser]);
+  }, [currentUser, setUsage]);
+
+  if (!currentUser) {
+    return <Navigate to="/login" state={{ from: '/dashboard/subscription' }} />;
+  }
 
   if (isLoading) {
     return (
@@ -576,12 +576,12 @@ export default function StripeWrapper() {
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    // Wait for auth to initialize
-    const unsubscribe = useAuth().onAuthStateChanged(() => {
+    const { onAuthStateChanged } = useAuth();
+    const unsubscribe = onAuthStateChanged(() => {
       setAuthChecked(true);
     });
     return () => unsubscribe();
-  }, []);
+  }, [onAuthStateChanged]);
 
   if (!authChecked) {
     return (
