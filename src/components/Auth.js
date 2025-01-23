@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { auth } from '../firebase/firebase';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   sendEmailVerification,
+  signInWithPopup,
+  GoogleAuthProvider,
   sendPasswordResetEmail
 } from 'firebase/auth';
 import styled from 'styled-components';
@@ -186,7 +188,7 @@ const checkPasswordStrength = (pass) => {
   return 'weak';
 };
 
-const Auth = ({ isSignUp }) => {
+const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [isReset, setIsReset] = useState(false);
   const [email, setEmail] = useState('');
@@ -200,7 +202,6 @@ const Auth = ({ isSignUp }) => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const navigate = useNavigate();
-  const { signInWithGoogle } = useAuth();
 
   const validateForm = () => {
     const errors = {};
@@ -298,14 +299,14 @@ const Auth = ({ isSignUp }) => {
 
   const handleGoogleSignIn = async () => {
     try {
-      setLoading(true);
-      await signInWithGoogle();
-      navigate('/dashboard');
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      if (result.user) {
+        navigate('/dashboard');
+      }
     } catch (error) {
       console.error('Google sign-in error:', error);
       setError(error.message);
-    } finally {
-      setLoading(false);
     }
   };
 
