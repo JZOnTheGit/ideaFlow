@@ -1,7 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { auth, db } from '../firebase/firebase';
 import { useSubscriptionContext } from '../contexts/SubscriptionContext';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 export const useSubscription = () => {
   const { subscription, loading, checkUploadLimit } = useSubscriptionContext();
