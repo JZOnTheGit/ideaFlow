@@ -5,6 +5,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase/firebase';
+import { auth } from '../firebase/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Navigate } from 'react-router-dom';
 
@@ -576,12 +577,11 @@ export default function StripeWrapper() {
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    const { onAuthStateChanged } = useAuth();
-    const unsubscribe = onAuthStateChanged(() => {
+    const unsubscribe = auth.onAuthStateChanged(() => {
       setAuthChecked(true);
     });
     return () => unsubscribe();
-  }, [onAuthStateChanged]);
+  }, []);
 
   if (!authChecked) {
     return (
