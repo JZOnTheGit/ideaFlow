@@ -52,6 +52,9 @@ export function AuthProvider({ children }) {
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({
+      prompt: 'select_account'
+    });
     try {
       const result = await signInWithPopup(auth, provider);
       
@@ -75,9 +78,17 @@ export function AuthProvider({ children }) {
         stripeSubscriptionId: null
       }, { merge: true });
 
+      console.log('Successfully signed in:', result.user);
       return result;
     } catch (error) {
       console.error('Error signing in with Google:', error);
+      if (error.code === 'auth/popup-blocked') {
+        alert('Please allow popups for this site to sign in with Google');
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        console.log('Sign-in popup closed by user');
+      } else {
+        alert('Error signing in: ' + error.message);
+      }
       throw error;
     }
   };
