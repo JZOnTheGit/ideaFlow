@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { collection, addDoc, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase/firebase';
 import { generateContent } from '../services/aiService';
-import { useSubscriptionContext } from '../contexts/SubscriptionContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // Import PDF.js properly
@@ -332,7 +332,7 @@ const PDFUpload = () => {
   const [isUploaded, setIsUploaded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadType, setUploadType] = useState('pdf');
-  const { checkUploadLimit, checkGenerationLimit, incrementUsage, incrementUploadCount } = useSubscriptionContext();
+  const { checkUploadLimit, checkGenerationLimit, incrementUsage, incrementUploadCount } = useSubscription();
 
   const resetState = () => {
     setFile(null);

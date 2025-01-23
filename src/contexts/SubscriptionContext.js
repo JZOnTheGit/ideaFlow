@@ -12,6 +12,12 @@ export function useSubscriptionContext() {
   return context;
 }
 
+export { SubscriptionContext };
+
+export function useSubscription() {
+  return useSubscriptionContext();
+}
+
 export function SubscriptionProvider({ children }) {
   const [subscription, setSubscription] = useState('free');
   const [usage, setUsage] = useState({
@@ -115,6 +121,4 @@ export function SubscriptionProvider({ children }) {
       {children}
     </SubscriptionContext.Provider>
   );
-}
-
-export { SubscriptionContext }; 
+} 
