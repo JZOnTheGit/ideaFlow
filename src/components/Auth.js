@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '../firebase/firebase';
+import { auth, db } from '../firebase/firebase';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -9,6 +9,7 @@ import {
   GoogleAuthProvider,
   sendPasswordResetEmail
 } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import styled from 'styled-components';
 import '../styles/stars.css';
 import { validateEmail, validatePassword, validatePasswordMatch } from '../utils/validation';
@@ -272,6 +273,24 @@ const Auth = () => {
         setIsVerification(true);
         setVerificationEmail(email);
         navigate('/verify-email');
+        await setDoc(doc(db, 'users', userCredential.user.uid), {
+          email: userCredential.user.email,
+          subscription: 'free',
+          createdAt: new Date(),
+          limits: {
+            pdfUploads: {
+              used: 0,
+              limit: 2
+            },
+            websiteUploads: {
+              used: 0,
+              limit: 1
+            }
+          },
+          generationsPerUpload: 1,
+          stripeCustomerId: null,
+          stripeSubscriptionId: null
+        }, { merge: true });
       }
     } catch (error) {
       console.error('Auth error:', error);
@@ -299,14 +318,35 @@ const Auth = () => {
 
   const handleGoogleSignIn = async () => {
     try {
+      setLoading(true);
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
+        await setDoc(doc(db, 'users', result.user.uid), {
+          email: result.user.email,
+          subscription: 'free',
+          createdAt: new Date(),
+          limits: {
+            pdfUploads: {
+              used: 0,
+              limit: 2
+            },
+            websiteUploads: {
+              used: 0,
+              limit: 1
+            }
+          },
+          generationsPerUpload: 1,
+          stripeCustomerId: null,
+          stripeSubscriptionId: null
+        }, { merge: true });
         navigate('/dashboard');
       }
     } catch (error) {
       console.error('Google sign-in error:', error);
       setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
