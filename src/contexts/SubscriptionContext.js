@@ -53,6 +53,23 @@ export function SubscriptionProvider({ children }) {
         return;
       }
 
+      // Initialize user limits if they don't exist
+      const initializeUser = async () => {
+        const userRef = doc(db, 'users', auth.currentUser.uid);
+        const docSnap = await getDoc(userRef);
+        if (!docSnap.exists() || !docSnap.data().limits) {
+          await setDoc(userRef, {
+            limits: {
+              pdfUploads: { used: 0, limit: 2 },
+              websiteUploads: { used: 0, limit: 1 }
+            },
+            subscription: 'free'
+          }, { merge: true });
+        }
+      };
+      
+      initializeUser();
+
       // Subscribe to user document changes
       unsubscribe = onSnapshot(
         doc(db, 'users', auth.currentUser.uid),

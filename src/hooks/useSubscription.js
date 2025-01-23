@@ -1,16 +1,48 @@
 import React, { useEffect, useState } from 'react';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase/firebase';
 import { useSubscriptionContext } from '../contexts/SubscriptionContext';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
-const useSubscription = () => {
+export const useSubscription = () => {
   const [subscription, setSubscription] = useState(null);
   const [usage, setUsage] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(Date.now());
 
   const refreshSubscription = () => {
     setLastUpdate(Date.now());
   };
+
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    const userRef = doc(db, 'users', auth.currentUser.uid);
+    
+    const unsubscribe = onSnapshot(userRef, (doc) => {
+      if (doc.exists()) {
+        const userData = doc.data();
+        // Ensure limits exist
+        if (!userData.limits) {
+          userData.limits = {
+            pdfUploads: { used: 0, limit: 2 },
+            websiteUploads: { used: 0, limit: 1 }
+          };
+        }
+        setSubscription(userData);
+        setLoading(false);
+      } else {
+        setError('No subscription data found');
+        setLoading(false);
+      }
+    }, (error) => {
+      console.error('Subscription listener error:', error);
+      setError(error.message);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const fetchSubscriptionData = async () => {
@@ -104,6 +136,7 @@ const useSubscription = () => {
       }
     ],
     refreshSubscription,
+    error,
   };
 };
 

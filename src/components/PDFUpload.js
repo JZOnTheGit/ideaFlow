@@ -4,6 +4,7 @@ import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase/firebase';
 import { generateContent } from '../services/aiService';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // Import PDF.js properly
 import * as pdfjsLib from 'pdfjs-dist';
@@ -470,6 +471,28 @@ const PDFUpload = () => {
 
       // After successful upload, increment the counter
       await incrementUploadCount('pdf');
+
+      // Update the usage count after successful upload
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data();
+      
+      if (!userData.limits || !userData.limits.pdfUploads) {
+        // Initialize limits if they don't exist
+        await updateDoc(userRef, {
+          'limits.pdfUploads': {
+            used: 0,
+            limit: 2
+          }
+        });
+      } else if (userData.limits.pdfUploads.used >= userData.limits.pdfUploads.limit) {
+        throw new Error('You have reached your PDF upload limit. Please upgrade to upload more PDFs.');
+      }
+
+      await updateDoc(userRef, {
+        'limits.pdfUploads.used': (userData.limits?.pdfUploads?.used || 0) + 1
+      });
+
     } catch (error) {
       console.error('Error processing PDF:', error.message, error.code);
       setError(error.message);
