@@ -13,10 +13,10 @@ import EmailVerification from './components/EmailVerification';
 import ResetPassword from './components/ResetPassword';
 import AccountTerminated from './components/AccountTerminated';
 import Subscription from './components/Subscription';
+import PDFUpload from './components/PDFUpload';
 
 // Lazy load components
 const LandingPage = lazy(() => import('./components/LandingPage'));
-const PDFUpload = lazy(() => import('./components/PDFUpload'));
 const History = lazy(() => import('./components/History'));
 const Settings = lazy(() => import('./components/Settings'));
 
@@ -54,7 +54,7 @@ function App() {
                 <Route path="/signup" element={<Auth isSignUp />} />
                 <Route path="/verify-email" element={<EmailVerification />} />
                 <Route path="/dashboard" element={<Dashboard />}>
-                  <Route path="upload" element={<PDFUpload />} />
+                  <Route index element={<PDFUpload />} />
                   <Route path="history" element={<History />} />
                   <Route path="subscription" element={<Subscription />} />
                   <Route path="settings" element={<Settings />} />
