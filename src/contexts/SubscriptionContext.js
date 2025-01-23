@@ -2,18 +2,24 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db } from '../firebase/firebase';
 import { doc, onSnapshot, setDoc, getDoc, updateDoc, increment } from 'firebase/firestore';
 
-export const SubscriptionContext = createContext();
+const SubscriptionContext = createContext();
 
-export const useSubscriptionContext = () => {
+export function useSubscriptionContext() {
   const context = useContext(SubscriptionContext);
   if (!context) {
     throw new Error('useSubscriptionContext must be used within a SubscriptionProvider');
   }
   return context;
-};
+}
 
-export const SubscriptionProvider = ({ children }) => {
-  const [subscription, setSubscription] = useState(null);
+export function SubscriptionProvider({ children }) {
+  const [subscription, setSubscription] = useState('free');
+  const [usage, setUsage] = useState({
+    pdfUploads: { used: 0, limit: 2 },
+    websiteUploads: { used: 0, limit: 1 },
+    generationsPerUpload: 1,
+    generationsUsed: {}
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,7 +56,8 @@ export const SubscriptionProvider = ({ children }) => {
       if (doc.exists()) {
         const userData = doc.data();
         console.log('Subscription data updated:', userData);
-        setSubscription(userData);
+        setSubscription(userData.subscription);
+        setUsage(userData.limits);
       }
       setLoading(false);
     });
@@ -58,14 +65,49 @@ export const SubscriptionProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  const checkUploadLimit = async (type) => {
+    if (!auth.currentUser) return false;
+    try {
+      const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+      const userData = userDoc.data();
+      if (!userData?.limits) return false;
+      const limits = userData.limits[`${type}Uploads`];
+      return limits ? limits.used < limits.limit : false;
+    } catch (error) {
+      console.error('Error checking upload limit:', error);
+      return false;
+    }
+  };
+
+  const incrementUploadCount = async (type) => {
+    if (!auth.currentUser) return;
+    try {
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      await updateDoc(userRef, {
+        [`limits.${type}Uploads.used`]: increment(1)
+      });
+    } catch (error) {
+      console.error('Error incrementing upload count:', error);
+    }
+  };
+
+  const checkGenerationLimit = async (docId) => {
+    // Add your generation limit check logic here
+    return true;
+  };
+
+  const incrementUsage = async (docId, type) => {
+    // Add your usage increment logic here
+  };
+
   const value = {
     subscription,
+    usage,
     loading,
-    checkUploadLimit: async (type) => {
-      if (!subscription?.limits) return false;
-      const limits = subscription.limits[`${type}Uploads`];
-      return limits ? limits.used < limits.limit : false;
-    }
+    checkUploadLimit,
+    incrementUploadCount,
+    checkGenerationLimit,
+    incrementUsage
   };
 
   return (
@@ -73,4 +115,6 @@ export const SubscriptionProvider = ({ children }) => {
       {children}
     </SubscriptionContext.Provider>
   );
-}; 
+}
+
+export { SubscriptionContext }; 
