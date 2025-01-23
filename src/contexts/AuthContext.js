@@ -134,7 +134,6 @@ export function AuthProvider({ children }) {
     signInWithGoogle,
     signOut,
     signup,
-    onAuthStateChanged: auth.onAuthStateChanged
   };
 
   return (

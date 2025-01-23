@@ -18,22 +18,22 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 
 export const updateUsage = async (userId, type) => {
-  const userRef = db.collection('users').doc(userId);
+  const userRef = doc(db, 'users', userId);
   
+  const docSnap = await getDoc(userRef);
+  if (!docSnap.exists()) {
+    throw new Error('User document does not exist!');
+  }
+
+  const userData = docSnap.data();
+  const limits = userData.limits || {};
+  const currentUsage = limits[type] || { used: 0, limit: type === 'pdfUploads' ? 2 : 1 };
+  
+  if (currentUsage.used >= currentUsage.limit) {
+    throw new Error('Usage limit reached');
+  }
+
   return db.runTransaction(async (transaction) => {
-    const doc = await transaction.get(userRef);
-    if (!doc.exists) {
-      throw new Error('User document does not exist!');
-    }
-
-    const userData = doc.data();
-    const limits = userData.limits || {};
-    const currentUsage = limits[type] || { used: 0, limit: type === 'pdfUploads' ? 2 : 1 };
-    
-    if (currentUsage.used >= currentUsage.limit) {
-      throw new Error('Usage limit reached');
-    }
-
     transaction.update(userRef, {
       [`limits.${type}.used`]: db.FieldValue.increment(1)
     });

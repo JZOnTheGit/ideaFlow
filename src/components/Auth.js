@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '../firebase/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   sendEmailVerification,
-  signInWithPopup, 
-  GoogleAuthProvider,
   sendPasswordResetEmail
 } from 'firebase/auth';
 import styled from 'styled-components';
@@ -202,6 +200,7 @@ const Auth = ({ isSignUp }) => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const navigate = useNavigate();
+  const { signInWithGoogle } = useAuth();
 
   const validateForm = () => {
     const errors = {};
@@ -299,14 +298,14 @@ const Auth = ({ isSignUp }) => {
 
   const handleGoogleSignIn = async () => {
     try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      if (result.user) {
-        navigate('/dashboard');
-      }
+      setLoading(true);
+      await signInWithGoogle();
+      navigate('/dashboard');
     } catch (error) {
       console.error('Google sign-in error:', error);
       setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
