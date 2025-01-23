@@ -45,19 +45,22 @@ export function SubscriptionProvider({ children }) {
   };
 
   useEffect(() => {
-    let unsubscribe;
+    if (!auth.currentUser) {
+      console.log('No user logged in');
+      return;
+    }
 
-    const setupSubscriptionListener = async () => {
-      if (!auth.currentUser) {
-        setLoading(false);
-        return;
-      }
+    console.log('Initializing subscription context for user:', auth.currentUser.uid);
+    const userRef = doc(db, 'users', auth.currentUser.uid);
 
-      // Initialize user limits if they don't exist
-      const initializeUser = async () => {
-        const userRef = doc(db, 'users', auth.currentUser.uid);
+    const initializeUser = async () => {
+      try {
+        console.log('Checking user document...');
         const docSnap = await getDoc(userRef);
+        console.log('User document exists:', docSnap.exists(), 'Data:', docSnap.data());
+
         if (!docSnap.exists() || !docSnap.data().limits) {
+          console.log('Creating new user document with limits');
           await setDoc(userRef, {
             limits: {
               pdfUploads: { used: 0, limit: 2 },
@@ -66,62 +69,22 @@ export function SubscriptionProvider({ children }) {
             subscription: 'free'
           }, { merge: true });
         }
-      };
-      
-      initializeUser();
-
-      // Subscribe to user document changes
-      unsubscribe = onSnapshot(
-        doc(db, 'users', auth.currentUser.uid),
-        (doc) => {
-          if (doc.exists()) {
-            const data = doc.data();
-            setSubscription(data.subscription || 'free');
-            setUsage(data.usage || {
-              pdfUploads: { used: 0, limit: 2 },
-              websiteUploads: { used: 0, limit: 1 },
-              generationsPerUpload: 1,
-              generationsUsed: {}
-            });
-          } else {
-            // Set default values for new users
-            setSubscription('free');
-            setUsage({
-              pdfUploads: { used: 0, limit: 2 },
-              websiteUploads: { used: 0, limit: 1 },
-              generationsPerUpload: 1,
-              generationsUsed: {}
-            });
-          }
-          setLoading(false);
-        },
-        (error) => {
-          console.error('Error fetching subscription:', error);
-          setLoading(false);
-        }
-      );
+      } catch (error) {
+        console.error('Error initializing user:', error);
+      }
     };
 
-    // Set up listener when auth state changes
-    const authUnsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        setupSubscriptionListener();
-      } else {
-        setSubscription('free');
-        setUsage({
-          pdfUploads: { used: 0, limit: 2 },
-          websiteUploads: { used: 0, limit: 1 },
-          generationsPerUpload: 1,
-          generationsUsed: {}
-        });
-        setLoading(false);
+    initializeUser();
+
+    const unsubscribe = onSnapshot(userRef, (doc) => {
+      console.log('Subscription data updated:', doc.data());
+      if (doc.exists()) {
+        setSubscription(doc.data());
       }
+      setLoading(false);
     });
 
-    return () => {
-      if (unsubscribe) unsubscribe();
-      authUnsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
   const resetUsage = async () => {

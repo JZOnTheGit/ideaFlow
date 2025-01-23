@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import styled from 'styled-components';
-import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase/firebase';
 import { generateContent } from '../services/aiService';
 import { useSubscription } from '../contexts/SubscriptionContext';
@@ -425,8 +425,29 @@ const PDFUpload = () => {
 
       console.log('Current user:', auth.currentUser?.uid);
 
+      // Debug: Check upload limits before proceeding
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      const userDoc = await getDoc(userRef);
+      console.log('User document data:', userDoc.data());
+      
+      if (!userDoc.exists()) {
+        console.log('Creating new user document with initial limits');
+        await setDoc(userRef, {
+          limits: {
+            pdfUploads: { used: 0, limit: 2 },
+            websiteUploads: { used: 0, limit: 1 }
+          },
+          subscription: 'free'
+        });
+      }
+      
+      const userData = userDoc.data();
+      console.log('Current PDF upload limits:', userData?.limits?.pdfUploads);
+
       const canUpload = await checkUploadLimit('pdf');
+      console.log('Can upload check result:', canUpload);
       if (!canUpload) {
+        console.log('Upload limit reached according to check');
         setError('Daily PDF upload limit reached. Upgrade to Pro for more uploads!');
         return;
       }
@@ -453,48 +474,28 @@ const PDFUpload = () => {
       console.log('Attempting to save document:', docData);
 
       const docRef = await addDoc(collection(db, 'pdf-contents'), docData);
-
       console.log('Saved to Firestore with ID:', docRef.id);
+
+      // After successful upload, update limits
+      const updatedDoc = await getDoc(userRef);
+      const updatedData = updatedDoc.data();
+      console.log('Current limits before update:', updatedData?.limits);
       
-      // Verify the document was saved
-      const savedDoc = await getDoc(docRef);
-      if (savedDoc.exists()) {
-        console.log('Document verified in Firestore:', savedDoc.data());
-      } else {
-        console.error('Document not found after saving');
-      }
+      const newUsed = (updatedData?.limits?.pdfUploads?.used || 0) + 1;
+      console.log('New used count will be:', newUsed);
+
+      await updateDoc(userRef, {
+        'limits.pdfUploads.used': newUsed
+      });
+      console.log('Updated upload count in Firestore');
 
       setCurrentDocId(docRef.id);
       setProcessing(false);
       setSuccessMessage('PDF uploaded successfully!');
       setIsUploaded(true);
 
-      // After successful upload, increment the counter
-      await incrementUploadCount('pdf');
-
-      // Update the usage count after successful upload
-      const userRef = doc(db, 'users', auth.currentUser.uid);
-      const userDoc = await getDoc(userRef);
-      const userData = userDoc.data();
-      
-      if (!userData.limits || !userData.limits.pdfUploads) {
-        // Initialize limits if they don't exist
-        await updateDoc(userRef, {
-          'limits.pdfUploads': {
-            used: 0,
-            limit: 2
-          }
-        });
-      } else if (userData.limits.pdfUploads.used >= userData.limits.pdfUploads.limit) {
-        throw new Error('You have reached your PDF upload limit. Please upgrade to upload more PDFs.');
-      }
-
-      await updateDoc(userRef, {
-        'limits.pdfUploads.used': (userData.limits?.pdfUploads?.used || 0) + 1
-      });
-
     } catch (error) {
-      console.error('Error processing PDF:', error.message, error.code);
+      console.error('Error processing PDF:', error);
       setError(error.message);
     } finally {
       setProcessing(false);
