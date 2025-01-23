@@ -19,12 +19,13 @@ export function useSubscription() {
 }
 
 export function SubscriptionProvider({ children }) {
-  const [subscription, setSubscription] = useState('free');
-  const [usage, setUsage] = useState({
-    pdfUploads: { used: 0, limit: 2 },
-    websiteUploads: { used: 0, limit: 1 },
-    generationsPerUpload: 1,
-    generationsUsed: {}
+  const [subscription, setSubscription] = useState({
+    status: 'free',
+    isActive: false,
+    limits: {
+      pdfUploads: { used: 0, limit: 2 },
+      websiteUploads: { used: 0, limit: 1 }
+    }
   });
   const [loading, setLoading] = useState(true);
   const unsubscribeRef = useRef();
@@ -65,19 +66,13 @@ export function SubscriptionProvider({ children }) {
       await setDoc(userRef, {
         email: auth.currentUser.email,
         subscription: 'free',
+        isActive: false,
         limits: {
           pdfUploads: { used: 0, limit: 2 },
           websiteUploads: { used: 0, limit: 1 }
         },
         generationsPerUpload: 1
       });
-    } else if (!docSnap.data().limits) {
-      await setDoc(userRef, {
-        limits: {
-          pdfUploads: { used: 0, limit: 2 },
-          websiteUploads: { used: 0, limit: 1 }
-        }
-      }, { merge: true });
     }
 
     return userRef;
@@ -107,19 +102,15 @@ export function SubscriptionProvider({ children }) {
 
           const userData = doc.data();
           setSubscription(prev => {
-            if (prev !== userData.subscription) {
-              return userData.subscription;
-            }
-            return prev;
-          });
-
-          setUsage(prev => {
-            const newLimits = userData.limits || {
-              pdfUploads: { used: 0, limit: 2 },
-              websiteUploads: { used: 0, limit: 1 }
-            };
-            if (JSON.stringify(prev) !== JSON.stringify(newLimits)) {
-              return newLimits;
+            if (prev.status !== userData.subscription) {
+              return {
+                status: userData.subscription,
+                isActive: userData.isActive,
+                limits: userData.limits || {
+                  pdfUploads: { used: 0, limit: 2 },
+                  websiteUploads: { used: 0, limit: 1 }
+                }
+              };
             }
             return prev;
           });
@@ -181,10 +172,8 @@ export function SubscriptionProvider({ children }) {
 
   const value = {
     subscription,
-    usage,
     loading,
     plans,
-    setUsage,
     checkUploadLimit,
     incrementUploadCount,
     checkGenerationLimit,

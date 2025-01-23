@@ -233,10 +233,15 @@ const Subscription = () => {
   } = useSubscription();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [couponCode, setCouponCode] = useState('');
   const { currentUser } = useAuth();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  const isProActive = subscription?.status === 'pro' && subscription?.isActive;
+  const freePlanLimits = {
+    pdfUploads: { used: 0, limit: 2 },
+    websiteUploads: { used: 0, limit: 1 }
+  };
 
   useEffect(() => {
     if (subscription && usage) {
@@ -267,6 +272,7 @@ const Subscription = () => {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${await currentUser.getIdToken()}`
               },
               body: JSON.stringify({
                 sessionId,
@@ -275,18 +281,11 @@ const Subscription = () => {
             }
           );
 
-          const data = await response.json();
-          console.log('Verify response:', data);
-
           if (response.ok) {
-            // Clear the URL parameters
             window.history.replaceState({}, '', '/dashboard/subscription');
-            // Wait a moment for Firestore to update
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            // Refresh the subscription data
             refreshSubscription();
           } else {
-            throw new Error(data.error || 'Failed to verify session');
+            throw new Error('Failed to verify session');
           }
         } catch (error) {
           console.error('Error verifying session:', error);
@@ -387,17 +386,13 @@ const Subscription = () => {
       
       const checkoutUrl = 'https://idea-flow-server.vercel.app/create-checkout-session';
       
-      // Only include couponCode if it's not empty
       const requestBody = {
         priceId,
         email: currentUser.email,
         successUrl: `${window.location.origin}/dashboard/subscription?success=true`,
-        cancelUrl: `${window.location.origin}/dashboard/subscription?canceled=true`
+        cancelUrl: `${window.location.origin}/dashboard/subscription?canceled=true`,
+        allowPromotionCodes: true // Enable coupon code field on Stripe Checkout
       };
-      
-      if (couponCode.trim()) {
-        requestBody.couponCode = couponCode.trim();
-      }
 
       const response = await fetch(checkoutUrl, {
         method: 'POST',
@@ -413,9 +408,6 @@ const Subscription = () => {
       if (!response.ok) {
         const errorData = await response.text();
         console.error('Server response:', errorData);
-        if (errorData.includes('coupon')) {
-          throw new Error('Invalid coupon code');
-        }
         throw new Error(errorData || 'Failed to create checkout session');
       }
 
@@ -424,9 +416,6 @@ const Subscription = () => {
     } catch (error) {
       console.error('Error:', error);
       setError(error.message);
-      if (error.message.includes('coupon')) {
-        setCouponCode(''); // Clear invalid coupon code
-      }
     } finally {
       setLoading(false);
     }
@@ -476,12 +465,12 @@ const Subscription = () => {
             <UsageProgress 
               $percentage={calculateUsagePercentage(
                 usage?.pdfUploads?.used ?? 0,
-                usage?.pdfUploads?.limit ?? 2
+                usage?.pdfUploads?.limit ?? (isProActive ? 80 : 2)
               )} 
             />
           </UsageBar>
           <UsageText>
-            {usage?.pdfUploads?.used ?? 0} / {usage?.pdfUploads?.limit ?? 2} uploads used
+            {usage?.pdfUploads?.used ?? 0} / {usage?.pdfUploads?.limit ?? (isProActive ? 80 : 2)} uploads used
           </UsageText>
         </UsageBlock>
         
@@ -503,7 +492,7 @@ const Subscription = () => {
 
       <PlansContainer>
         {Object.values(plans).map((plan) => (
-          <PlanCard key={plan.id} $active={subscription?.plan === plan.id}>
+          <PlanCard key={plan.id} $active={isProActive && plan.id === 'pro'}>
             <PlanTitle>{plan.name}</PlanTitle>
             <PlanPrice>
               £{plan.price}<span>/month</span>
@@ -513,39 +502,25 @@ const Subscription = () => {
                 <Feature key={index}>{feature}</Feature>
               ))}
             </FeaturesList>
-            {subscription?.plan === plan.id ? (
-              plan.id === 'pro' && (
-                <Button 
-                  $secondary 
-                  onClick={() => setShowCancelModal(true)}
-                  disabled={loading}
-                >
-                  Cancel Subscription
-                </Button>
-              )
-            ) : (
-              plan.id === 'pro' && (
-                <>
-                  <CouponInput
-                    type="text"
-                    placeholder="Have a coupon code?"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
+            {plan.id === 'pro' && (
+              <>
+                {isProActive ? (
+                  <Button 
+                    $secondary 
+                    onClick={() => setShowCancelModal(true)}
                     disabled={loading}
-                  />
-                  {couponCode && (
-                    <CouponText>
-                      Coupon code "{couponCode}" will be applied at checkout
-                    </CouponText>
-                  )}
+                  >
+                    Cancel Subscription
+                  </Button>
+                ) : (
                   <Button
                     onClick={() => handleSubscribe(process.env.REACT_APP_STRIPE_PRICE_ID)}
                     disabled={loading}
                   >
                     {loading ? 'Processing...' : 'Upgrade Now'}
                   </Button>
-                </>
-              )
+                )}
+              </>
             )}
           </PlanCard>
         ))}
