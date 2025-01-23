@@ -299,20 +299,14 @@ const Auth = ({ isSignUp }) => {
 
   const handleGoogleSignIn = async () => {
     try {
-      setLoading(true);
-      await signInWithGoogle();
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Sign in error:', error);
-      if (error.code === 'auth/network-request-failed') {
-        setError('Network error. Please check your connection.');
-      } else if (error.code === 'auth/popup-closed-by-user') {
-        setError('Sign-in cancelled. Please try again.');
-      } else {
-        setError(error.message || 'Failed to sign in');
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      if (result.user) {
+        navigate('/dashboard');
       }
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      setError(error.message);
     }
   };
 
