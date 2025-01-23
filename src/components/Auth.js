@@ -210,7 +210,7 @@ const Auth = () => {
     // Check if user is already logged in
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
-        navigate('/dashboard', { replace: true });
+        window.location.href = '/dashboard';
       }
     });
     return () => unsubscribe();
@@ -245,7 +245,7 @@ const Auth = () => {
         // Login
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         console.log('Login successful:', userCredential.user);
-        navigate('/dashboard', { replace: true });
+        window.location.href = '/dashboard';
       } else {
         // Sign up
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -266,7 +266,7 @@ const Auth = () => {
           stripeSubscriptionId: null
         });
 
-        navigate('/verify-email', { replace: true });
+        window.location.href = '/verify-email';
       }
     } catch (error) {
       console.error('Auth error:', error);
@@ -312,7 +312,7 @@ const Auth = () => {
           stripeSubscriptionId: null
         }, { merge: true });
 
-        navigate('/dashboard', { replace: true });
+        window.location.href = '/dashboard';
       }
     } catch (error) {
       console.error('Google sign-in error:', error);
