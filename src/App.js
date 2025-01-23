@@ -7,23 +7,19 @@ import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingSpinner from './components/LoadingSpinner';
 import { auth } from './firebase/firebase';
-import Upload from './components/Upload';
-import History from './components/History';
-import Settings from './components/Settings';
+import Auth from './components/Auth';
+import Dashboard from './components/Dashboard';
+import EmailVerification from './components/EmailVerification';
+import ResetPassword from './components/ResetPassword';
+import AccountTerminated from './components/AccountTerminated';
 import Subscription from './components/Subscription';
 import DashboardHome from './components/DashboardHome';
 
 // Lazy load components
 const LandingPage = lazy(() => import('./components/LandingPage'));
-const Auth = lazy(() => import('./components/Auth'));
-const Dashboard = lazy(() => import('./components/Dashboard'));
-const EmailVerification = lazy(() => import('./components/EmailVerification'));
-const PDFUpload = lazy(() => import('./components/PDFUpload'));
-const Settings = lazy(() => import('./components/Settings'));
+const Upload = lazy(() => import('./components/Upload'));
 const History = lazy(() => import('./components/History'));
-const ResetPassword = lazy(() => import('./components/ResetPassword'));
-const AccountTerminated = lazy(() => import('./components/AccountTerminated'));
-const Subscription = lazy(() => import('./components/Subscription'));
+const Settings = lazy(() => import('./components/Settings'));
 
 function PrivateRoute({ children }) {
   const [authChecked, setAuthChecked] = useState(false);
