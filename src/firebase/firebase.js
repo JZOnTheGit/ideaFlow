@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, doc, getDoc, setDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -15,14 +15,7 @@ const firebaseConfig = {
 // Initialize Firebase only once
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: {
-      forceOwnership: true
-    }
-  }),
-  experimentalForceLongPolling: true
-});
+export const db = getFirestore(app);
 export const storage = getStorage(app);
 
 export const updateUsage = async (userId, type) => {

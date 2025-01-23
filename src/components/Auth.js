@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { auth, db } from '../firebase/firebase';
+import { auth } from '../firebase/firebase';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -9,7 +9,6 @@ import {
   GoogleAuthProvider,
   sendPasswordResetEmail
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
 import styled from 'styled-components';
 import '../styles/stars.css';
 import { validateEmail, validatePassword, validatePasswordMatch } from '../utils/validation';
@@ -244,29 +243,13 @@ const Auth = () => {
       if (isLogin) {
         // Login
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        console.log('Login successful:', userCredential.user);
-        window.location.href = '/dashboard';
+        navigate('/dashboard');
       } else {
         // Sign up
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await sendEmailVerification(userCredential.user);
         setVerificationEmail(email);
-        
-        // Create user document
-        await setDoc(doc(db, 'users', userCredential.user.uid), {
-          email: userCredential.user.email,
-          subscription: 'free',
-          createdAt: new Date(),
-          limits: {
-            pdfUploads: { used: 0, limit: 2 },
-            websiteUploads: { used: 0, limit: 1 }
-          },
-          generationsPerUpload: 1,
-          stripeCustomerId: null,
-          stripeSubscriptionId: null
-        });
-
-        window.location.href = '/verify-email';
+        navigate('/verify-email');
       }
     } catch (error) {
       console.error('Auth error:', error);
@@ -296,23 +279,8 @@ const Auth = () => {
       setLoading(true);
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      
       if (result.user) {
-        // Create/update user document
-        await setDoc(doc(db, 'users', result.user.uid), {
-          email: result.user.email,
-          subscription: 'free',
-          createdAt: new Date(),
-          limits: {
-            pdfUploads: { used: 0, limit: 2 },
-            websiteUploads: { used: 0, limit: 1 }
-          },
-          generationsPerUpload: 1,
-          stripeCustomerId: null,
-          stripeSubscriptionId: null
-        }, { merge: true });
-
-        window.location.href = '/dashboard';
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error('Google sign-in error:', error);
