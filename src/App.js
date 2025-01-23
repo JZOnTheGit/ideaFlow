@@ -16,7 +16,7 @@ import Subscription from './components/Subscription';
 
 // Lazy load components
 const LandingPage = lazy(() => import('./components/LandingPage'));
-const Upload = lazy(() => import('./components/Upload'));
+const PDFUpload = lazy(() => import('./components/PDFUpload'));
 const History = lazy(() => import('./components/History'));
 const Settings = lazy(() => import('./components/Settings'));
 
@@ -54,7 +54,7 @@ function App() {
                 <Route path="/signup" element={<Auth isSignUp />} />
                 <Route path="/verify-email" element={<EmailVerification />} />
                 <Route path="/dashboard" element={<Dashboard />}>
-                  <Route path="upload" element={<Upload />} />
+                  <Route path="upload" element={<PDFUpload />} />
                   <Route path="history" element={<History />} />
                   <Route path="subscription" element={<Subscription />} />
                   <Route path="settings" element={<Settings />} />
