@@ -101,18 +101,31 @@ export function SubscriptionProvider({ children }) {
           if (!doc.exists() || !isMounted) return;
 
           const userData = doc.data();
-          setSubscription(prev => {
-            if (prev.status !== userData.subscription) {
-              return {
-                status: userData.subscription,
-                isActive: userData.isActive,
-                limits: userData.limits || {
-                  pdfUploads: { used: 0, limit: 2 },
-                  websiteUploads: { used: 0, limit: 1 }
-                }
-              };
+          // Determine if subscription is active based on subscriptionStatus
+          const isActive = userData.subscriptionStatus === 'active' || 
+                         userData.subscription === 'pro';
+          
+          // Set proper limits based on subscription status
+          const limits = {
+            pdfUploads: {
+              used: userData.limits?.pdfUploads?.used || 0,
+              limit: isActive ? 80 : 2
+            },
+            websiteUploads: {
+              used: userData.limits?.websiteUploads?.used || 0,
+              limit: isActive ? 50 : 1
             }
-            return prev;
+          };
+
+          setSubscription(prev => {
+            return {
+              status: userData.subscription || 'free',
+              isActive: isActive,
+              limits: limits,
+              stripeCustomerId: userData.stripeCustomerId,
+              stripeSubscriptionId: userData.stripeSubscriptionId,
+              subscriptionStatus: userData.subscriptionStatus
+            };
           });
 
           setLoading(false);

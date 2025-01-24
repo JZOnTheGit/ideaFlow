@@ -222,32 +222,24 @@ const CouponText = styled.p`
 `;
 
 const Subscription = () => {
-  const { 
-    subscription, 
-    usage = {
-      pdfUploads: { used: 0, limit: 2 },
-      websiteUploads: { used: 0, limit: 1 }
-    }, 
-    plans = [], 
-    refreshSubscription = () => {} 
-  } = useSubscription();
+  const { subscription } = useSubscription();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { currentUser } = useAuth();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const isProActive = subscription?.status === 'pro' && subscription?.isActive;
-  const freePlanLimits = {
-    pdfUploads: { used: 0, limit: 2 },
-    websiteUploads: { used: 0, limit: 1 }
-  };
+  // Check both subscription status and subscriptionStatus from Stripe
+  const isProActive = (subscription?.status === 'pro' || 
+                      subscription?.subscriptionStatus === 'active') && 
+                      subscription?.isActive;
 
   useEffect(() => {
-    if (subscription && usage) {
+    if (subscription) {
+      console.log('Current subscription state:', subscription);
       setIsLoading(false);
     }
-  }, [subscription, usage]);
+  }, [subscription]);
 
   useEffect(() => {
     // Verify Stripe key is available
@@ -283,7 +275,6 @@ const Subscription = () => {
 
           if (response.ok) {
             window.history.replaceState({}, '', '/dashboard/subscription');
-            refreshSubscription();
           } else {
             throw new Error('Failed to verify session');
           }
@@ -295,7 +286,7 @@ const Subscription = () => {
 
       verifySession();
     }
-  }, [currentUser, refreshSubscription]);
+  }, [currentUser]);
 
   useEffect(() => {
     const fetchUsage = async () => {
@@ -321,8 +312,6 @@ const Subscription = () => {
                 generationsPerUpload: userData.subscription === 'pro' ? 3 : 1
               }, { merge: true });
             }
-            
-            refreshSubscription();
           } else {
             console.log('No user document found, creating one with default limits');
             // Create new user document with default limits
@@ -338,8 +327,6 @@ const Subscription = () => {
               stripeCustomerId: null,
               stripeSubscriptionId: null
             });
-            
-            refreshSubscription();
           }
         } catch (error) {
           console.error('Error fetching usage:', error);
@@ -348,7 +335,7 @@ const Subscription = () => {
       }
     };
     fetchUsage();
-  }, [currentUser, refreshSubscription]);
+  }, [currentUser]);
 
   if (!currentUser) {
     return <Navigate to="/login" state={{ from: '/dashboard/subscription' }} />;
@@ -391,7 +378,7 @@ const Subscription = () => {
         email: currentUser.email,
         successUrl: `${window.location.origin}/dashboard/subscription?success=true`,
         cancelUrl: `${window.location.origin}/dashboard/subscription?canceled=true`,
-        allowPromotionCodes: true // Enable coupon code field on Stripe Checkout
+        allow_promotion_codes: true // This is the parameter Stripe expects
       };
 
       const response = await fetch(checkoutUrl, {
@@ -464,13 +451,13 @@ const Subscription = () => {
           <UsageBar>
             <UsageProgress 
               $percentage={calculateUsagePercentage(
-                usage?.pdfUploads?.used ?? 0,
-                usage?.pdfUploads?.limit ?? (isProActive ? 80 : 2)
+                subscription?.pdfUploads?.used ?? 0,
+                subscription?.pdfUploads?.limit ?? (isProActive ? 80 : 2)
               )} 
             />
           </UsageBar>
           <UsageText>
-            {usage?.pdfUploads?.used ?? 0} / {usage?.pdfUploads?.limit ?? (isProActive ? 80 : 2)} uploads used
+            {subscription?.pdfUploads?.used ?? 0} / {subscription?.pdfUploads?.limit ?? (isProActive ? 80 : 2)} uploads used
           </UsageText>
         </UsageBlock>
         
@@ -479,13 +466,13 @@ const Subscription = () => {
           <UsageBar>
             <UsageProgress 
               $percentage={calculateUsagePercentage(
-                usage?.websiteUploads?.used ?? 0,
-                usage?.websiteUploads?.limit ?? 1
+                subscription?.websiteUploads?.used ?? 0,
+                subscription?.websiteUploads?.limit ?? 1
               )} 
             />
           </UsageBar>
           <UsageText>
-            {usage?.websiteUploads?.used ?? 0} / {usage?.websiteUploads?.limit ?? 1} links used
+            {subscription?.websiteUploads?.used ?? 0} / {subscription?.websiteUploads?.limit ?? 1} links used
           </UsageText>
         </UsageBlock>
       </UsageSection>
