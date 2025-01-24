@@ -1,71 +1,95 @@
-# Getting Started with Create React App
+# IdeaFlow - AI Content Generation Platform
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+![IdeaFlow Logo](path/to/logo.png)
 
-## Available Scripts
+## 🌟 [Live Demo](https://ideaflow.uk)
 
-In the project directory, you can run:
+IdeaFlow is a powerful AI-driven platform that transforms your PDF documents and website content into engaging social media content for multiple platforms.
 
-### `npm start`
+## ✨ Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### 📱 Multi-Platform Content Generation
+- **Twitter Posts**: Generate engaging tweets from your content
+- **YouTube Scripts**: Create video scripts optimized for YouTube
+- **TikTok Content**: Transform your content into TikTok-friendly formats
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### 📄 Document Processing
+- **PDF Upload**: Upload and process PDF documents
+- **Website Links**: Extract and process content from websites
+- **Smart Content Extraction**: Advanced text extraction and processing
 
-### `npm test`
+### 💎 Subscription Tiers
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+#### Free Plan
+- 2 PDF uploads per day
+- 1 website link per day
+- 1 generation per content type
+- Basic features access
 
-### `npm run build`
+#### Pro Plan
+- 80 PDF uploads per month
+- 50 website uploads per month
+- 3 generations per content type
+- Priority support
+- Advanced features
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### 🛡️ Security & Privacy
+- Secure Firebase Authentication
+- Protected API endpoints
+- Stripe secure payments
+- Data encryption
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 💫 User Experience
+- Drag and drop file upload
+- Real-time processing status
+- Usage tracking dashboard
+- Responsive design
+- Intuitive interface
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## 🚀 Technology Stack
 
-### `npm run eject`
+- **Frontend**: React.js with Styled Components
+- **Backend**: Node.js with Express
+- **Database**: Firebase Firestore
+- **Authentication**: Firebase Auth
+- **Payments**: Stripe Integration
+- **AI Processing**: Advanced AI Models
+- **Hosting**: Vercel
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## 🔒 Security
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+IdeaFlow implements industry-standard security practices:
+- JWT Authentication
+- Secure API endpoints
+- CORS protection
+- Environment variable protection
+- Rate limiting
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## 🎯 Use Cases
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- Content Creators
+- Digital Marketers
+- Social Media Managers
+- Business Owners
+- Content Teams
+- Freelancers
 
-## Learn More
+## 📈 Future Updates
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- Enhanced UI/UX improvements
+- Additional social media platforms
+- Advanced analytics
+- Team collaboration features
+- Custom AI model training
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## 🤝 Support
 
-### Code Splitting
+For support, email support@ideaflow.uk or visit our [support page](https://ideaflow.uk/support).
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## 📝 License
 
-### Analyzing the Bundle Size
+Copyright © 2024 IdeaFlow. All rights reserved.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+---
 
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
-# AIIdeaGen
+<p align="center">Made with ❤️ by the IdeaFlow Team</p>
