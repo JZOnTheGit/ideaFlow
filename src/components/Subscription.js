@@ -390,22 +390,9 @@ const Subscription = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      if (!currentUser) {
-        throw new Error('Please sign in to upgrade');
-      }
 
-      const idToken = await currentUser.getIdToken(true);
-      
+      const idToken = await currentUser.getIdToken();
       const checkoutUrl = 'https://idea-flow-server.vercel.app/create-checkout-session';
-      
-      const requestBody = {
-        priceId,
-        email: currentUser.email,
-        successUrl: `${window.location.origin}/dashboard/subscription?success=true`,
-        cancelUrl: `${window.location.origin}/dashboard/subscription?canceled=true`,
-        allow_promotion_codes: true // This is the parameter Stripe expects
-      };
 
       const response = await fetch(checkoutUrl, {
         method: 'POST',
@@ -413,23 +400,26 @@ const Subscription = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${idToken}`
         },
-        credentials: 'include',
-        mode: 'cors',
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          priceId,
+          email: currentUser.email,
+          successUrl: `${window.location.origin}/dashboard/subscription?success=true`,
+          cancelUrl: `${window.location.origin}/dashboard/subscription?canceled=true`,
+          allow_promotion_codes: true
+        })
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Server response:', errorData);
-        throw new Error(errorData || 'Failed to create checkout session');
+        throw new Error(data.error || 'Failed to create checkout session');
       }
 
-      const { url } = await response.json();
-      window.location.href = url;
+      // Redirect to Stripe Checkout
+      window.location.href = data.url;
     } catch (error) {
       console.error('Error:', error);
       setError(error.message);
-    } finally {
       setLoading(false);
     }
   };
