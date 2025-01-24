@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import '../styles/stars.css';
 
 const LandingContainer = styled.div`
@@ -200,7 +200,18 @@ const FooterText = styled.p`
   margin: 0;
 `;
 
-const FooterLink = styled.a`
+const FooterLink = styled(Link)`
+  color: #c49952;
+  text-decoration: none;
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: #d4aa63;
+    text-decoration: underline;
+  }
+`;
+
+const ExternalLink = styled.a`
   color: #c49952;
   text-decoration: none;
   transition: color 0.3s ease;
@@ -293,13 +304,13 @@ const LandingPage = () => {
             © 2024 IdeaFlow. All rights reserved.
           </FooterText>
           <FooterText>
-            Support: <FooterLink href="mailto:jass150505@gmail.com">jass150505@gmail.com</FooterLink>
+            Support: <ExternalLink href="mailto:jass150505@gmail.com">jass150505@gmail.com</ExternalLink>
           </FooterText>
           <FooterText>
-            Created by <FooterLink href="https://j-singh.net" target="_blank" rel="noopener noreferrer">J Singh</FooterLink>
+            Created by <ExternalLink href="https://j-singh.net" target="_blank" rel="noopener noreferrer">J Singh</ExternalLink>
           </FooterText>
           <FooterText>
-            <FooterLink href="/terms">Terms of Service</FooterLink> | <FooterLink href="/privacy">Privacy Policy</FooterLink>
+            <FooterLink to="/terms">Terms of Service</FooterLink> | <FooterLink to="/privacy">Privacy Policy</FooterLink>
           </FooterText>
         </FooterContent>
       </Footer>
