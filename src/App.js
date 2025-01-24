@@ -41,7 +41,7 @@ function PrivateRoute({ children }) {
 
 function App() {
   return (
-    <Router>
+    <>
       <GlobalStyle />
       <AuthProvider>
         <SubscriptionProvider>
@@ -68,7 +68,7 @@ function App() {
           </ErrorBoundary>
         </SubscriptionProvider>
       </AuthProvider>
-    </Router>
+    </>
   );
 }
 

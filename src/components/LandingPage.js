@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import '../styles/stars.css';
 
 const LandingContainer = styled.div`
@@ -200,7 +200,7 @@ const FooterText = styled.p`
   margin: 0;
 `;
 
-const FooterLink = styled(Link)`
+const FooterLink = styled.a`
   color: #c49952;
   text-decoration: none;
   transition: color 0.3s ease;
@@ -224,16 +224,6 @@ const ExternalLink = styled.a`
 
 const LandingPage = () => {
   const navigate = useNavigate();
-
-  const handleTermsClick = (e) => {
-    e.preventDefault();
-    navigate('/terms');
-  };
-
-  const handlePrivacyClick = (e) => {
-    e.preventDefault();
-    navigate('/privacy');
-  };
 
   return (
     <LandingContainer>
@@ -320,8 +310,8 @@ const LandingPage = () => {
             Created by <ExternalLink href="https://j-singh.net" target="_blank" rel="noopener noreferrer">J Singh</ExternalLink>
           </FooterText>
           <FooterText>
-            <FooterLink onClick={handleTermsClick} href="#">Terms of Service</FooterLink> |{' '}
-            <FooterLink onClick={handlePrivacyClick} href="#">Privacy Policy</FooterLink>
+            <FooterLink href="/terms">Terms of Service</FooterLink> |{' '}
+            <FooterLink href="/privacy">Privacy Policy</FooterLink>
           </FooterText>
         </FooterContent>
       </Footer>
