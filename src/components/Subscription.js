@@ -229,6 +229,32 @@ const Subscription = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  const plans = [
+    {
+      id: 'free',
+      name: 'Free Plan',
+      price: '0',
+      features: [
+        '2 PDF uploads per day',
+        '1 website link per day',
+        '1 generation per content type',
+        'Basic features'
+      ]
+    },
+    {
+      id: 'pro',
+      name: 'Pro Plan',
+      price: '15',
+      features: [
+        '80 PDF uploads per month',
+        '50 website uploads per month',
+        '3 generations per content type',
+        'Priority support',
+        'Advanced features'
+      ]
+    }
+  ];
+
   // Check both subscription status and subscriptionStatus from Stripe
   const isProActive = (subscription?.status === 'pro' || 
                       subscription?.subscriptionStatus === 'active') && 
