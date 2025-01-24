@@ -175,6 +175,42 @@ const PlanFeatures = styled.ul`
   }
 `;
 
+const Footer = styled.footer`
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2rem 0;
+  margin-top: 4rem;
+  width: 100%;
+  border-top: 1px solid rgba(196, 153, 82, 0.2);
+`;
+
+const FooterContent = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+`;
+
+const FooterText = styled.p`
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  margin: 0;
+`;
+
+const FooterLink = styled.a`
+  color: #c49952;
+  text-decoration: none;
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: #d4aa63;
+    text-decoration: underline;
+  }
+`;
+
 const LandingPage = () => {
   const navigate = useNavigate();
 
@@ -250,6 +286,20 @@ const LandingPage = () => {
           </PricingCard>
         </PricingGrid>
       </PricingSection>
+
+      <Footer>
+        <FooterContent>
+          <FooterText>
+            © 2024 IdeaFlow. All rights reserved.
+          </FooterText>
+          <FooterText>
+            Support: <FooterLink href="mailto:jass150505@gmail.com">jass150505@gmail.com</FooterLink>
+          </FooterText>
+          <FooterText>
+            Created by <FooterLink href="https://j-singh.net" target="_blank" rel="noopener noreferrer">J Singh</FooterLink>
+          </FooterText>
+        </FooterContent>
+      </Footer>
     </LandingContainer>
   );
 };
