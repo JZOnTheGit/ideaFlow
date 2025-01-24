@@ -438,7 +438,7 @@ const Subscription = () => {
     try {
       setLoading(true);
       
-      await fetch(`${process.env.REACT_APP_API_URL}/cancel-subscription`, {
+      await fetch('https://idea-flow-server.vercel.app/cancel-subscription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -446,19 +446,33 @@ const Subscription = () => {
         },
         body: JSON.stringify({
           userId: currentUser.uid,
+          stripeSubscriptionId: subscription.stripeSubscriptionId,
+          customerId: subscription.stripeCustomerId
         }),
       });
 
-      // Wait a moment for Firestore to update
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Refresh the page to show new limits
-      window.location.href = '/dashboard/subscription';
+      const response = await fetch('https://idea-flow-server.vercel.app/verify-subscription-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await currentUser.getIdToken()}`
+        },
+        body: JSON.stringify({
+          userId: currentUser.uid
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to verify subscription status');
+      }
+
+      // Refresh the page after successful cancellation
+      window.location.reload();
 
       setShowCancelModal(false);
     } catch (error) {
       console.error('Cancel subscription error:', error);
-      setError('Failed to cancel subscription. Please try again.');
+      setError(error.message || 'Failed to cancel subscription. Please try again.');
       setLoading(false);
     }
   };
