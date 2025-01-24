@@ -332,7 +332,7 @@ const PDFUpload = () => {
   const [isUploaded, setIsUploaded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadType, setUploadType] = useState('pdf');
-  const { checkUploadLimit, checkGenerationLimit, incrementUsage, incrementUploadCount } = useSubscription();
+  const { checkUploadLimit, checkGenerationLimit, incrementUsage, incrementUploadCount, incrementGenerationCount } = useSubscription();
 
   const resetState = () => {
     setFile(null);
@@ -519,6 +519,10 @@ const PDFUpload = () => {
         [type]: result
       }));
       setSuccessMessage(`${type.charAt(0).toUpperCase() + type.slice(1)} content generated successfully!`);
+
+      // Increment the generation count after successful generation
+      await incrementGenerationCount(currentDocId);
+
     } catch (error) {
       console.error('Error:', error);
       setError(error.message || 'Failed to generate content. Please try again.');

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { auth, db } from '../firebase/firebase';
-import { doc, onSnapshot, setDoc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, getDoc, updateDoc, increment, runTransaction, serverTimestamp } from 'firebase/firestore';
 
 const SubscriptionContext = createContext();
 
@@ -157,10 +157,53 @@ export function SubscriptionProvider({ children }) {
     });
   }, []);
 
-  const checkGenerationLimit = async (docId) => {
-    // Add your generation limit check logic here
-    return true;
-  };
+  const checkGenerationLimit = useCallback(async (docId) => {
+    if (!auth.currentUser) return false;
+    
+    try {
+      // Get fresh data from Firestore
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      const docSnap = await getDoc(userRef);
+      
+      if (!docSnap.exists()) return false;
+      
+      const userData = docSnap.data();
+      const generationLimits = userData.limits?.generations || { perDocument: 1, documents: {} };
+      const docGenerations = generationLimits.documents[docId] || { used: 0 };
+      
+      return docGenerations.used < generationLimits.perDocument;
+    } catch (error) {
+      console.error('Error checking generation limit:', error);
+      return false;
+    }
+  }, []);
+
+  const incrementGenerationCount = useCallback(async (docId) => {
+    if (!auth.currentUser) return;
+    
+    try {
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      
+      // Use a transaction to safely increment the counter
+      await runTransaction(db, async (transaction) => {
+        const docSnap = await transaction.get(userRef);
+        if (!docSnap.exists()) return;
+        
+        const userData = docSnap.data();
+        const generationLimits = userData.limits?.generations || { perDocument: 1, documents: {} };
+        const docGenerations = generationLimits.documents[docId] || { used: 0 };
+        
+        // Update the generation count
+        transaction.update(userRef, {
+          [`limits.generations.documents.${docId}.used`]: docGenerations.used + 1,
+          updatedAt: serverTimestamp()
+        });
+      });
+    } catch (error) {
+      console.error('Error incrementing generation count:', error);
+      throw error;
+    }
+  }, []);
 
   const incrementUsage = async (docId, type) => {
     // Add your usage increment logic here
@@ -173,7 +216,7 @@ export function SubscriptionProvider({ children }) {
     checkUploadLimit,
     incrementUploadCount,
     checkGenerationLimit,
-    incrementUsage
+    incrementGenerationCount
   };
 
   return (
