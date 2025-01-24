@@ -98,8 +98,8 @@ export function SubscriptionProvider({ children }) {
               pdfUploads: { used: 0, limit: 2 },
               websiteUploads: { used: 0, limit: 1 }
             },
-            stripeCustomerId: userData.customerId,
-            stripeSubscriptionId: userData.subscriptionId,
+            stripeCustomerId: userData.stripeCustomerId,
+            stripeSubscriptionId: userData.stripeSubscriptionId,
             subscriptionStatus: userData.subscriptionStatus
           });
 
