@@ -225,6 +225,16 @@ const ExternalLink = styled.a`
 const LandingPage = () => {
   const navigate = useNavigate();
 
+  const handleTermsClick = (e) => {
+    e.preventDefault();
+    navigate('/terms');
+  };
+
+  const handlePrivacyClick = (e) => {
+    e.preventDefault();
+    navigate('/privacy');
+  };
+
   return (
     <LandingContainer>
       <div className="bg-animation">
@@ -310,7 +320,8 @@ const LandingPage = () => {
             Created by <ExternalLink href="https://j-singh.net" target="_blank" rel="noopener noreferrer">J Singh</ExternalLink>
           </FooterText>
           <FooterText>
-            <FooterLink to="/terms">Terms of Service</FooterLink> | <FooterLink to="/privacy">Privacy Policy</FooterLink>
+            <FooterLink onClick={handleTermsClick} href="#">Terms of Service</FooterLink> |{' '}
+            <FooterLink onClick={handlePrivacyClick} href="#">Privacy Policy</FooterLink>
           </FooterText>
         </FooterContent>
       </Footer>

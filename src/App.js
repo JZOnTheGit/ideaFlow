@@ -54,21 +54,15 @@ function App() {
                 <Route path="/verify-email" element={<EmailVerification />} />
                 <Route path="/terms" element={<TermsOfService />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
-                <Route
-                  path="/dashboard/*"
-                  element={
-                    <PrivateRoute>
-                      <Routes>
-                        <Route path="/" element={<Dashboard />} />
-                        <Route path="/subscription" element={<Subscription />} />
-                        <Route path="/upload" element={<PDFUpload />} />
-                        <Route path="/reset-password" element={<ResetPassword />} />
-                        <Route path="/account-terminated" element={<AccountTerminated />} />
-                        <Route path="/" element={<Navigate to="/login" replace />} />
-                      </Routes>
-                    </PrivateRoute>
-                  }
-                />
+                <Route path="/dashboard" element={<Dashboard />}>
+                  <Route index element={<PDFUpload />} />
+                  <Route path="history" element={<History />} />
+                  <Route path="subscription" element={<Subscription />} />
+                  <Route path="settings" element={<Settings />} />
+                </Route>
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/account-terminated" element={<AccountTerminated />} />
+                <Route path="*" element={<Navigate to="/login" replace />} />
               </Routes>
             </Suspense>
           </ErrorBoundary>
