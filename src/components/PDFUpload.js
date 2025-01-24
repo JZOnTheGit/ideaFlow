@@ -460,19 +460,7 @@ const PDFUpload = () => {
 
       // After successful upload, update limits
       const userRef = doc(db, 'users', auth.currentUser.uid);
-      const updatedDoc = await getDoc(userRef);
-      const updatedData = updatedDoc.data();
-      console.log('Current limits before update:', updatedData?.limits);
-      
-      // Safely get the current used count
-      const currentUsed = Number(updatedData?.limits?.pdfUploads?.used) || 0;
-      const newUsed = currentUsed + 1;
-      console.log('New used count will be:', newUsed);
-
-      await updateDoc(userRef, {
-        'limits.pdfUploads.used': newUsed
-      });
-      console.log('Updated upload count in Firestore');
+      await incrementUploadCount('pdf');
 
       setCurrentDocId(docRef.id);
       setProcessing(false);

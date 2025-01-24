@@ -88,7 +88,7 @@ export function SubscriptionProvider({ children }) {
 
     const setupSubscription = async () => {
       try {
-        const userRef = await initializeUser();
+        const userRef = doc(db, 'users', auth.currentUser.uid);
         
         if (!isMounted) return;
 
@@ -117,16 +117,14 @@ export function SubscriptionProvider({ children }) {
             }
           };
 
-          setSubscription(prev => {
-            return {
-              status: userData.subscription || 'free',
-              isActive: isActive,
-              limits: limits,
-              stripeCustomerId: userData.stripeCustomerId,
-              stripeSubscriptionId: userData.stripeSubscriptionId,
-              subscriptionStatus: userData.subscriptionStatus
-            };
-          });
+          setSubscription(prev => ({
+            status: userData.subscription || 'free',
+            isActive: isActive,
+            limits: limits,
+            stripeCustomerId: userData.stripeCustomerId,
+            stripeSubscriptionId: userData.stripeSubscriptionId,
+            subscriptionStatus: userData.subscriptionStatus
+          }));
 
           setLoading(false);
         });
@@ -146,7 +144,7 @@ export function SubscriptionProvider({ children }) {
         unsubscribeRef.current();
       }
     };
-  }, [auth.currentUser?.uid, initializeUser]);
+  }, [auth.currentUser?.uid]);
 
   const checkUploadLimit = async (type) => {
     if (!auth.currentUser) return false;

@@ -477,13 +477,13 @@ const Subscription = () => {
           <UsageBar>
             <UsageProgress 
               $percentage={calculateUsagePercentage(
-                subscription?.pdfUploads?.used ?? 0,
-                subscription?.pdfUploads?.limit ?? (isProActive ? 80 : 2)
+                subscription?.limits?.pdfUploads?.used ?? 0,
+                subscription?.limits?.pdfUploads?.limit ?? 2
               )} 
             />
           </UsageBar>
           <UsageText>
-            {subscription?.pdfUploads?.used ?? 0} / {subscription?.pdfUploads?.limit ?? (isProActive ? 80 : 2)} uploads used
+            {subscription?.limits?.pdfUploads?.used ?? 0} / {subscription?.limits?.pdfUploads?.limit ?? 2} uploads used
           </UsageText>
         </UsageBlock>
         
@@ -492,13 +492,13 @@ const Subscription = () => {
           <UsageBar>
             <UsageProgress 
               $percentage={calculateUsagePercentage(
-                subscription?.websiteUploads?.used ?? 0,
-                subscription?.websiteUploads?.limit ?? 1
+                subscription?.limits?.websiteUploads?.used ?? 0,
+                subscription?.limits?.websiteUploads?.limit ?? 1
               )} 
             />
           </UsageBar>
           <UsageText>
-            {subscription?.websiteUploads?.used ?? 0} / {subscription?.websiteUploads?.limit ?? 1} links used
+            {subscription?.limits?.websiteUploads?.used ?? 0} / {subscription?.limits?.websiteUploads?.limit ?? 1} links used
           </UsageText>
         </UsageBlock>
       </UsageSection>
