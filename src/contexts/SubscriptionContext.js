@@ -56,30 +56,17 @@ export function SubscriptionProvider({ children }) {
     }
   ];
 
-  const initializeUser = useCallback(async () => {
-    if (!auth.currentUser) return;
-
-    const userRef = doc(db, 'users', auth.currentUser.uid);
-    const docSnap = await getDoc(userRef);
-
-    if (!docSnap.exists()) {
-      await setDoc(userRef, {
-        email: auth.currentUser.email,
-        subscription: 'free',
+  useEffect(() => {
+    if (!auth.currentUser) {
+      // Reset subscription state when user logs out
+      setSubscription({
+        status: 'free',
         isActive: false,
         limits: {
           pdfUploads: { used: 0, limit: 2 },
           websiteUploads: { used: 0, limit: 1 }
-        },
-        generationsPerUpload: 1
+        }
       });
-    }
-
-    return userRef;
-  }, []);
-
-  useEffect(() => {
-    if (!auth.currentUser) {
       setLoading(false);
       return;
     }
@@ -97,37 +84,31 @@ export function SubscriptionProvider({ children }) {
           unsubscribeRef.current();
         }
 
+        // Set up real-time listener
         unsubscribeRef.current = onSnapshot(userRef, (doc) => {
           if (!doc.exists() || !isMounted) return;
 
           const userData = doc.data();
-          // Determine if subscription is active based on subscriptionStatus
-          const isActive = userData.subscriptionStatus === 'active' || 
-                         userData.subscription === 'pro';
           
-          // Set proper limits based on subscription status
-          const limits = {
-            pdfUploads: {
-              used: userData.limits?.pdfUploads?.used || 0,
-              limit: isActive ? 80 : 2
-            },
-            websiteUploads: {
-              used: userData.limits?.websiteUploads?.used || 0,
-              limit: isActive ? 50 : 1
-            }
-          };
-
-          setSubscription(prev => ({
+          // Always use Firestore data for limits and status
+          setSubscription({
             status: userData.subscription || 'free',
-            isActive: isActive,
-            limits: limits,
-            stripeCustomerId: userData.stripeCustomerId,
-            stripeSubscriptionId: userData.stripeSubscriptionId,
+            isActive: userData.subscriptionStatus === 'active',
+            limits: userData.limits || {
+              pdfUploads: { used: 0, limit: 2 },
+              websiteUploads: { used: 0, limit: 1 }
+            },
+            stripeCustomerId: userData.customerId,
+            stripeSubscriptionId: userData.subscriptionId,
             subscriptionStatus: userData.subscriptionStatus
-          }));
+          });
 
           setLoading(false);
+        }, (error) => {
+          console.error('Firestore subscription error:', error);
+          setLoading(false);
         });
+
       } catch (error) {
         console.error('Error setting up subscription:', error);
         if (isMounted) {
@@ -146,31 +127,35 @@ export function SubscriptionProvider({ children }) {
     };
   }, [auth.currentUser?.uid]);
 
-  const checkUploadLimit = async (type) => {
+  const checkUploadLimit = useCallback(async (type) => {
     if (!auth.currentUser) return false;
-    try {
-      const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
-      const userData = userDoc.data();
-      if (!userData?.limits) return false;
-      const limits = userData.limits[`${type}Uploads`];
-      return limits ? limits.used < limits.limit : false;
-    } catch (error) {
-      console.error('Error checking upload limit:', error);
-      return false;
-    }
-  };
+    
+    // Always get fresh data from Firestore
+    const userRef = doc(db, 'users', auth.currentUser.uid);
+    const docSnap = await getDoc(userRef);
+    
+    if (!docSnap.exists()) return false;
+    
+    const userData = docSnap.data();
+    const limits = userData.limits || {
+      pdfUploads: { used: 0, limit: 2 },
+      websiteUploads: { used: 0, limit: 1 }
+    };
+    
+    const uploadType = type === 'pdf' ? 'pdfUploads' : 'websiteUploads';
+    return limits[uploadType].used < limits[uploadType].limit;
+  }, []);
 
-  const incrementUploadCount = async (type) => {
+  const incrementUploadCount = useCallback(async (type) => {
     if (!auth.currentUser) return;
-    try {
-      const userRef = doc(db, 'users', auth.currentUser.uid);
-      await updateDoc(userRef, {
-        [`limits.${type}Uploads.used`]: increment(1)
-      });
-    } catch (error) {
-      console.error('Error incrementing upload count:', error);
-    }
-  };
+    
+    const userRef = doc(db, 'users', auth.currentUser.uid);
+    const uploadType = type === 'pdf' ? 'pdfUploads' : 'websiteUploads';
+    
+    await updateDoc(userRef, {
+      [`limits.${uploadType}.used`]: increment(1)
+    });
+  }, []);
 
   const checkGenerationLimit = async (docId) => {
     // Add your generation limit check logic here
