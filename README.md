@@ -84,7 +84,7 @@ IdeaFlow implements industry-standard security practices:
 
 ## 🤝 Support
 
-For support, email support@ideaflow.uk or visit our [support page](https://ideaflow.uk/support).
+For support, email jass150505@gmail.com
 
 ## 📝 License
 
