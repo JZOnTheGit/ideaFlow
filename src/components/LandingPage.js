@@ -4,11 +4,20 @@ import { useNavigate } from 'react-router-dom';
 import '../styles/stars.css';
 
 const LandingContainer = styled.div`
+  position: relative;
   min-height: 100vh;
   background: #000;
   color: #ffffff;
-  position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+
+  .bg-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+  }
 `;
 
 const HeroSection = styled.div`
@@ -181,6 +190,8 @@ const Footer = styled.footer`
   margin-top: 4rem;
   width: 100%;
   border-top: 1px solid rgba(196, 153, 82, 0.2);
+  position: relative;
+  z-index: 1000;
 `;
 
 const FooterContent = styled.div`
@@ -192,6 +203,8 @@ const FooterContent = styled.div`
   align-items: center;
   gap: 1rem;
   text-align: center;
+  position: relative;
+  z-index: 1001;
 `;
 
 const FooterText = styled.p`
@@ -224,6 +237,11 @@ const ExternalLink = styled.a`
 
 const LandingPage = () => {
   const navigate = useNavigate();
+
+  const handleNavigation = (path) => (e) => {
+    e.preventDefault();
+    navigate(path);
+  };
 
   return (
     <LandingContainer>
@@ -310,8 +328,8 @@ const LandingPage = () => {
             Created by <ExternalLink href="https://j-singh.net" target="_blank" rel="noopener noreferrer">J Singh</ExternalLink>
           </FooterText>
           <FooterText>
-            <FooterLink href="/terms">Terms of Service</FooterLink> |{' '}
-            <FooterLink href="/privacy">Privacy Policy</FooterLink>
+            <FooterLink href="#" onClick={handleNavigation('/terms')}>Terms of Service</FooterLink> |{' '}
+            <FooterLink href="#" onClick={handleNavigation('/privacy')}>Privacy Policy</FooterLink>
           </FooterText>
         </FooterContent>
       </Footer>

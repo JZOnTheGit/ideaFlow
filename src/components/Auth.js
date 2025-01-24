@@ -179,6 +179,23 @@ const ErrorText = styled.span`
   margin-top: -0.5rem;
 `;
 
+const TermsText = styled.p`
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 0.5rem;
+  text-align: center;
+`;
+
+const TermsLink = styled.span`
+  color: #c49952;
+  text-decoration: none;
+  cursor: pointer;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
 const checkPasswordStrength = (pass) => {
   const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/;
   const mediumRegex = /^(?=.*[a-zA-Z])(?=.*[0-9])(?=.{6,})/;
@@ -388,6 +405,14 @@ const Auth = () => {
              isReset ? 'Send Reset Link' :
              isLogin ? 'Login' : 'Sign Up'}
           </Button>
+          {isLogin && (
+            <TermsText>
+              By logging in, you agree to our{' '}
+              <TermsLink onClick={() => navigate('/terms')}>Terms of Service</TermsLink>{' '}
+              and{' '}
+              <TermsLink onClick={() => navigate('/privacy')}>Privacy Policy</TermsLink>
+            </TermsText>
+          )}
         </Form>
         <ButtonContainer>
           {!isReset && (
