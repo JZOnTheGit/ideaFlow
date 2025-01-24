@@ -1,7 +1,7 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Router } from 'react-router-dom';
 import { GlobalStyle } from './components/styles/GlobalStyle';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -40,11 +40,8 @@ function PrivateRoute({ children }) {
 }
 
 function App() {
-  useEffect(() => {
-  }, []);
-
   return (
-    <>
+    <Router>
       <GlobalStyle />
       <AuthProvider>
         <SubscriptionProvider>
@@ -55,23 +52,29 @@ function App() {
                 <Route path="/login" element={<Auth />} />
                 <Route path="/signup" element={<Auth isSignUp />} />
                 <Route path="/verify-email" element={<EmailVerification />} />
-                <Route path="/dashboard" element={<Dashboard />}>
-                  <Route index element={<PDFUpload />} />
-                  <Route path="history" element={<History />} />
-                  <Route path="subscription" element={<Subscription />} />
-                  <Route path="settings" element={<Settings />} />
-                </Route>
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/account-terminated" element={<AccountTerminated />} />
                 <Route path="/terms" element={<TermsOfService />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
-                <Route path="/" element={<Navigate to="/login" replace />} />
+                <Route
+                  path="/dashboard/*"
+                  element={
+                    <PrivateRoute>
+                      <Routes>
+                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/subscription" element={<Subscription />} />
+                        <Route path="/upload" element={<PDFUpload />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
+                        <Route path="/account-terminated" element={<AccountTerminated />} />
+                        <Route path="/" element={<Navigate to="/login" replace />} />
+                      </Routes>
+                    </PrivateRoute>
+                  }
+                />
               </Routes>
             </Suspense>
           </ErrorBoundary>
         </SubscriptionProvider>
       </AuthProvider>
-    </>
+    </Router>
   );
 }
 
