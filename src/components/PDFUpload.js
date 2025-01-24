@@ -481,7 +481,7 @@ const PDFUpload = () => {
       // Check generation limit for this document
       const canGenerate = await checkGenerationLimit(currentDocId);
       if (!canGenerate) {
-        setError(`Generation limit reached for this document. Upgrade to Pro for more generations per document!`);
+        setError(`Generation limit reached for this document. Upgrade to Pro for more generations, If your already on pro, this limit will be lifted in the future update!`);
         return;
       }
 
