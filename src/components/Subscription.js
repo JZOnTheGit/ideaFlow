@@ -428,6 +428,12 @@ const Subscription = () => {
     try {
       setLoading(true);
       
+      console.log('Subscription data:', subscription); // Debug log
+      
+      if (!subscription?.stripeSubscriptionId) {
+        throw new Error('No subscription ID found. Please contact support.');
+      }
+      
       await fetch('https://idea-flow-server.vercel.app/cancel-subscription', {
         method: 'POST',
         headers: {
@@ -435,9 +441,7 @@ const Subscription = () => {
           'Authorization': `Bearer ${await currentUser.getIdToken()}`
         },
         body: JSON.stringify({
-          userId: currentUser.uid,
           stripeSubscriptionId: subscription.stripeSubscriptionId,
-          customerId: subscription.stripeCustomerId
         }),
       });
 
@@ -447,9 +451,6 @@ const Subscription = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${await currentUser.getIdToken()}`
         },
-        body: JSON.stringify({
-          userId: currentUser.uid
-        })
       });
 
       if (!response.ok) {
