@@ -479,9 +479,9 @@ const PDFUpload = () => {
     try {
       setError(null);
       // Check generation limit for this document
-      const canGenerate = await checkGenerationLimit(currentDocId, type);
+      const canGenerate = await checkGenerationLimit(currentDocId);
       if (!canGenerate) {
-        setError(`Generation limit reached for ${type}. Upgrade to Pro for more generations!`);
+        setError(`Generation limit reached for this document. Upgrade to Pro for more generations per document!`);
         return;
       }
 
@@ -509,10 +509,6 @@ const PDFUpload = () => {
           generatedAt: new Date()
         }
       });
-      console.log(`Updated Firestore with ${type} content:`, result);
-      
-      // Increment generation usage
-      await incrementUsage(currentDocId, type);
       
       setGeneratedContent(prev => ({
         ...prev,
