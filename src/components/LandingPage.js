@@ -298,6 +298,9 @@ const LandingPage = () => {
           <FooterText>
             Created by <FooterLink href="https://j-singh.net" target="_blank" rel="noopener noreferrer">J Singh</FooterLink>
           </FooterText>
+          <FooterText>
+            <FooterLink href="/terms">Terms of Service</FooterLink> | <FooterLink href="/privacy">Privacy Policy</FooterLink>
+          </FooterText>
         </FooterContent>
       </Footer>
     </LandingContainer>

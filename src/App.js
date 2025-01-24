@@ -14,6 +14,8 @@ import ResetPassword from './components/ResetPassword';
 import AccountTerminated from './components/AccountTerminated';
 import Subscription from './components/Subscription';
 import PDFUpload from './components/PDFUpload';
+import TermsOfService from './components/TermsOfService';
+import PrivacyPolicy from './components/PrivacyPolicy';
 
 // Lazy load components
 const LandingPage = lazy(() => import('./components/LandingPage'));
@@ -61,6 +63,8 @@ function App() {
                 </Route>
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/account-terminated" element={<AccountTerminated />} />
+                <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/" element={<Navigate to="/login" replace />} />
               </Routes>
             </Suspense>
