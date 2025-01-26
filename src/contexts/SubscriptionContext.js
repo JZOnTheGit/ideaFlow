@@ -2,20 +2,22 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { auth, db } from '../firebase/firebase';
 import { doc, onSnapshot, setDoc, getDoc, updateDoc, increment, runTransaction, serverTimestamp } from 'firebase/firestore';
 
-const SubscriptionContext = createContext();
+// Create the context
+const SubscriptionContext = createContext({
+  subscription: null,
+  loading: true,
+  checkUploadLimit: async () => {},
+  checkRateLimit: async () => {},
+  incrementUploadCount: async () => {},
+});
 
+// Custom hook to use the subscription context
 export function useSubscriptionContext() {
   const context = useContext(SubscriptionContext);
   if (!context) {
     throw new Error('useSubscriptionContext must be used within a SubscriptionProvider');
   }
   return context;
-}
-
-export { SubscriptionContext };
-
-export function useSubscription() {
-  return useSubscriptionContext();
 }
 
 export function SubscriptionProvider({ children }) {
@@ -209,6 +211,37 @@ export function SubscriptionProvider({ children }) {
     // Add your usage increment logic here
   };
 
+  const checkRateLimit = async (userId) => {
+    try {
+      const userRef = doc(db, 'users', userId);
+      const userDoc = await getDoc(userRef);
+      
+      if (!userDoc.exists()) {
+        throw new Error('User document does not exist');
+      }
+
+      const userData = userDoc.data();
+      const lastGeneration = userData.lastGeneration?.toDate() || new Date(0);
+      const now = new Date();
+      const timeDiff = now - lastGeneration;
+      const cooldown = userData.subscription === 'pro' ? 2000 : 3000; // 2s for pro, 3s for free
+
+      if (timeDiff < cooldown) {
+        throw new Error(`Please wait ${Math.ceil((cooldown - timeDiff) / 1000)} seconds before generating again`);
+      }
+
+      // Update last generation timestamp
+      await updateDoc(userRef, {
+        lastGeneration: serverTimestamp()
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Rate limit check error:', error);
+      throw error;
+    }
+  };
+
   const value = {
     subscription,
     loading,
@@ -216,7 +249,8 @@ export function SubscriptionProvider({ children }) {
     checkUploadLimit,
     incrementUploadCount,
     checkGenerationLimit,
-    incrementGenerationCount
+    incrementGenerationCount,
+    checkRateLimit
   };
 
   return (
@@ -224,4 +258,9 @@ export function SubscriptionProvider({ children }) {
       {children}
     </SubscriptionContext.Provider>
   );
+}
+
+// Export the hook for using subscription
+export function useSubscription() {
+  return useSubscriptionContext();
 } 

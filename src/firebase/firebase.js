@@ -63,7 +63,7 @@ export const updateUsage = async (userId, type) => {
   });
 };
 
-export const checkGenerationLimit = async (userId, docId, platform) => {
+export const checkRateLimit = async (userId) => {
   const userRef = doc(db, 'users', userId);
   const docSnap = await getDoc(userRef);
   
@@ -72,64 +72,27 @@ export const checkGenerationLimit = async (userId, docId, platform) => {
   }
 
   const userData = docSnap.data();
-  const generationsPerUpload = userData.subscription === 'pro' ? 3 : 1;
+  const lastGeneration = userData.lastGeneration?.toDate() || new Date(0);
+  const now = new Date();
+  const timeDiff = now - lastGeneration;
+  const cooldown = userData.subscription === 'pro' ? 2000 : 3000; // 2s for pro, 3s for free
 
-  // Get the document's generation counts
-  const docRef = doc(db, 'pdf-contents', docId);
-  const docSnapshot = await getDoc(docRef);
-  if (!docSnapshot.exists()) {
-    throw new Error('Document not found');
-  }
-  
-  const docData = docSnapshot.data();
-  
-  // Verify document belongs to user
-  if (docData.userId !== userId) {
-    throw new Error('Unauthorized access to document');
+  if (timeDiff < cooldown) {
+    throw new Error(`Please wait ${Math.ceil((cooldown - timeDiff) / 1000)} seconds before generating again`);
   }
 
-  // Log current state
-  console.log('Checking generation limit:', {
-    platform,
-    currentGenerations: docData[`${platform}Generations`] || 0,
-    limit: generationsPerUpload
+  // Update last generation timestamp
+  await updateDoc(userRef, {
+    lastGeneration: now
   });
-
-  const platformGenerations = docData[`${platform}Generations`] || 0;
-
-  // Check if platform-specific generation limit is reached for this document
-  if (platformGenerations >= generationsPerUpload) {
-    throw new Error(`Generation limit reached for ${platform} on this document`);
-  }
 
   return true;
-};
-
-export const incrementGenerationCount = async (userId, docId, platform) => {
-  const docRef = doc(db, 'pdf-contents', docId);
-  
-  // First verify the document exists and belongs to user
-  const docSnap = await getDoc(docRef);
-  if (!docSnap.exists()) {
-    throw new Error('Document not found');
-  }
-  if (docSnap.data().userId !== userId) {
-    throw new Error('Unauthorized access to document');
-  }
-
-  await updateDoc(docRef, {
-    [`${platform}Generations`]: db.FieldValue.increment(1),
-    lastUpdated: new Date()
-  });
 };
 
 export const initializeDocumentGenerations = async (docId, userId) => {
   const docRef = doc(db, 'pdf-contents', docId);
   await setDoc(docRef, {
     userId,
-    twitterGenerations: 0,
-    youtubeGenerations: 0,
-    tiktokGenerations: 0,
     createdAt: new Date(),
     status: 'active',
     type: 'document',

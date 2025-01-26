@@ -1,10 +1,9 @@
 import React, { useState, useRef } from 'react';
 import styled from 'styled-components';
-import { collection, addDoc, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase/firebase';
-import { generateContent } from '../services/aiService';
 import { useSubscription } from '../contexts/SubscriptionContext';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { generateContent } from '../services/aiService';
 
 // Import PDF.js properly
 import * as pdfjsLib from 'pdfjs-dist';
@@ -332,7 +331,11 @@ const PDFUpload = () => {
   const [isUploaded, setIsUploaded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadType, setUploadType] = useState('pdf');
-  const { checkUploadLimit, checkGenerationLimit, incrementUsage, incrementUploadCount, incrementGenerationCount } = useSubscription();
+  const { 
+    checkUploadLimit, 
+    incrementUploadCount,
+  } = useSubscription();
+  const [docData, setDocData] = useState(null);
 
   const resetState = () => {
     setFile(null);
@@ -453,13 +456,13 @@ const PDFUpload = () => {
         status: 'uploaded'
       };
       
+      setDocData(docData);
       console.log('Attempting to save document:', docData);
 
       const docRef = await addDoc(collection(db, 'pdf-contents'), docData);
       console.log('Saved to Firestore with ID:', docRef.id);
 
       // After successful upload, update limits
-      const userRef = doc(db, 'users', auth.currentUser.uid);
       await incrementUploadCount('pdf');
 
       setCurrentDocId(docRef.id);
@@ -475,55 +478,43 @@ const PDFUpload = () => {
     }
   };
 
-  const handleGenerate = async (type) => {
+  const handleGenerate = async (platform) => {
     try {
-      setError(null);
-      // Check generation limit for this document
-      const canGenerate = await checkGenerationLimit(currentDocId);
-      if (!canGenerate) {
-        setError(`Generation limit reached for this document. Upgrade to Pro for more generations, If your already on pro, this limit will be lifted in the future update!`);
-        return;
+      setError('');
+      setGenerating(prev => ({ ...prev, [platform]: true }));
+
+      // Get the current document data if not in state
+      if (!docData) {
+        const docRef = doc(db, 'pdf-contents', currentDocId);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+          throw new Error('Document not found');
+        }
+        setDocData(docSnap.data());
       }
 
-      setGenerating(prev => ({ ...prev, [type]: true }));
+      const result = await generateContent(docData.content, platform);
       
-      // Get the document content
+      // Store the generated content in Firestore
       const docRef = doc(db, 'pdf-contents', currentDocId);
-      const docSnap = await getDoc(docRef);
-      
-      if (!docSnap.exists()) {
-        throw new Error('Document not found');
-      }
-      
-      const content = docSnap.data().content;
-      if (!content) {
-        throw new Error('No content available to process');
-      }
-
-      const result = await generateContent(content, type);
-      
-      // Update the document in Firestore with the generated content
       await updateDoc(docRef, {
-        [`generatedContent.${type}`]: {
+        [`generatedContent.${platform}`]: {
           content: result.content,
-          generatedAt: new Date()
+          generatedAt: result.generatedAt
         }
       });
-      
+
       setGeneratedContent(prev => ({
         ...prev,
-        [type]: result
+        [platform]: result
       }));
-      setSuccessMessage(`${type.charAt(0).toUpperCase() + type.slice(1)} content generated successfully!`);
 
-      // Increment the generation count after successful generation
-      await incrementGenerationCount(currentDocId);
-
+      setSuccessMessage(`Generated ${platform} content successfully!`);
     } catch (error) {
-      console.error('Error:', error);
-      setError(error.message || 'Failed to generate content. Please try again.');
+      console.error('Generation error:', error);
+      setError(error.message);
     } finally {
-      setGenerating(prev => ({ ...prev, [type]: false }));
+      setGenerating(prev => ({ ...prev, [platform]: false }));
     }
   };
 
