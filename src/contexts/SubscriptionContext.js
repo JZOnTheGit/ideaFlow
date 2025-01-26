@@ -123,8 +123,11 @@ export const SubscriptionProvider = ({ children }) => {
       }
     };
     
-    const uploadType = type === 'pdf' ? 'pdfUploads' : 'websiteUploads';
-    return limits[uploadType].used < limits[uploadType].limit;
+    // Check if user has reached their limit
+    if (limits[type].used >= limits[type].limit) {
+      return false;
+    }
+    return true;
   }, []);
 
   const incrementUploadCount = async (type) => {
@@ -139,12 +142,21 @@ export const SubscriptionProvider = ({ children }) => {
       const userData = docSnap.data();
       const currentLimits = userData.limits || {};
       
+      // Check if user has reached their limit before incrementing
+      const isProUser = userData.subscription === 'pro';
+      const limit = isProUser ? (type === 'pdfUploads' ? 80 : 50) : (type === 'pdfUploads' ? 2 : 1);
+      const currentUsed = currentLimits[type]?.used || 0;
+      
+      if (currentUsed >= limit) {
+        throw new Error(`Upload limit reached for ${type}`);
+      }
+
       await updateDoc(userRef, {
         limits: {
           ...currentLimits,
           [type]: {
-            used: (currentLimits[type]?.used || 0) + 1,
-            limit: currentLimits[type]?.limit || (type === 'pdfUploads' ? 2 : 1)
+            used: currentUsed + 1,
+            limit
           }
         }
       });
