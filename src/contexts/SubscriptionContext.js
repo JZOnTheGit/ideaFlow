@@ -75,13 +75,20 @@ export const SubscriptionProvider = ({ children }) => {
     const unsubscribe = onSnapshot(userRef, (doc) => {
       if (doc.exists()) {
         const userData = doc.data();
+        const isProUser = userData.subscription === 'pro';
         
         setSubscription({
           status: userData.subscription || 'free',
           isActive: userData.subscriptionStatus === 'active',
-          limits: userData.limits || {
-            pdfUploads: { used: 0, limit: 2 },
-            websiteUploads: { used: 0, limit: 1 }
+          limits: {
+            pdfUploads: {
+              used: userData.limits?.pdfUploads?.used || 0,
+              limit: isProUser ? 80 : 2
+            },
+            websiteUploads: {
+              used: userData.limits?.websiteUploads?.used || 0,
+              limit: isProUser ? 50 : 1
+            }
           }
         });
       }
@@ -102,9 +109,16 @@ export const SubscriptionProvider = ({ children }) => {
     if (!docSnap.exists()) return false;
     
     const userData = docSnap.data();
-    const limits = userData.limits || {
-      pdfUploads: { used: 0, limit: 2 },
-      websiteUploads: { used: 0, limit: 1 }
+    const isProUser = userData.subscription === 'pro';
+    const limits = {
+      pdfUploads: {
+        used: userData.limits?.pdfUploads?.used || 0,
+        limit: isProUser ? 80 : 2
+      },
+      websiteUploads: {
+        used: userData.limits?.websiteUploads?.used || 0,
+        limit: isProUser ? 50 : 1
+      }
     };
     
     const uploadType = type === 'pdf' ? 'pdfUploads' : 'websiteUploads';
