@@ -75,7 +75,7 @@ export const SubscriptionProvider = ({ children }) => {
     const unsubscribe = onSnapshot(userRef, (doc) => {
       if (doc.exists()) {
         const userData = doc.data();
-        console.log('Subscription data updated:', userData);
+        // Subscription data updated
         const isProUser = userData.subscription === 'pro';
         
         setSubscription({

@@ -430,8 +430,6 @@ const PDFUpload = () => {
       setError(null);
       setSuccessMessage('');
 
-      console.log('Current user:', auth.currentUser?.uid);
-
       // Check upload limit
       const canUpload = await checkUploadLimit('pdfUploads');
       if (!canUpload) {
@@ -440,7 +438,6 @@ const PDFUpload = () => {
       }
 
       const text = await extractTextFromPDF(file);
-      console.log('Extracted text:', text);
 
       // Save to Firestore
       if (!auth.currentUser) {
@@ -458,10 +455,7 @@ const PDFUpload = () => {
         status: 'uploaded'
       };
       
-      console.log('Attempting to save document:', docData);
-
       const docRef = await addDoc(collection(db, 'pdf-contents'), docData);
-      console.log('Saved to Firestore with ID:', docRef.id);
 
       // Update usage count after successful upload
       await incrementUploadCount('pdfUploads');

@@ -84,7 +84,6 @@ export const generateContent = async (content, type) => {
     }
 
     const requestBody = generatePrompts[type](content);
-    console.log('Request body:', requestBody);
 
     const response = await fetch(COHERE_API_URL, {
       method: 'POST',
