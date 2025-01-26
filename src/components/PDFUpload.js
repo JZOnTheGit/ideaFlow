@@ -1,10 +1,9 @@
 import React, { useState, useRef } from 'react';
 import styled from 'styled-components';
-import { collection, addDoc, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase/firebase';
 import { generateContent } from '../services/aiService';
 import { useSubscription } from '../contexts/SubscriptionContext';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // Import PDF.js properly
 import * as pdfjsLib from 'pdfjs-dist';
@@ -316,6 +315,7 @@ const URLInput = styled.input`
 `;
 
 const PDFUpload = () => {
+  const { checkUploadLimit, incrementUploadCount } = useSubscription();
   const fileInputRef = useRef(null);
   const [file, setFile] = useState(null);
   const [url, setUrl] = useState('');
@@ -332,7 +332,6 @@ const PDFUpload = () => {
   const [isUploaded, setIsUploaded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadType, setUploadType] = useState('pdf');
-  const { checkUploadLimit, checkGenerationLimit, incrementUsage, incrementUploadCount, incrementGenerationCount } = useSubscription();
 
   const resetState = () => {
     setFile(null);
@@ -395,16 +394,24 @@ const PDFUpload = () => {
 
   const handleFile = async (selectedFile) => {
     setError('');
-    setIsUploaded(false);
-    if (selectedFile?.type !== 'application/pdf') {
-      setError('Please upload a PDF file');
-      return;
+    setProcessing(true);
+    
+    try {
+      if (selectedFile?.type !== 'application/pdf') {
+        setError('Please upload a PDF file');
+        return;
+      }
+      if (selectedFile.size > 1000000) { // 1MB limit
+        setError('File size must be less than 1MB');
+        return;
+      }
+      setFile(selectedFile);
+    } catch (error) {
+      console.error('Error:', error);
+      setError(error.message);
+    } finally {
+      setProcessing(false);
     }
-    if (selectedFile.size > 1000000) { // 1MB limit
-      setError('File size must be less than 1MB');
-      return;
-    }
-    setFile(selectedFile);
   };
 
   const handleDrop = async (e) => {
@@ -425,10 +432,8 @@ const PDFUpload = () => {
 
       console.log('Current user:', auth.currentUser?.uid);
 
-      // Use the checkUploadLimit from subscription context
-      const canUpload = await checkUploadLimit('pdf');
-      console.log('Can upload check result:', canUpload);
-      
+      // Check upload limit
+      const canUpload = await checkUploadLimit('pdfUploads');
       if (!canUpload) {
         setError('Daily PDF upload limit reached. Upgrade to Pro for more uploads!');
         return;
@@ -458,9 +463,8 @@ const PDFUpload = () => {
       const docRef = await addDoc(collection(db, 'pdf-contents'), docData);
       console.log('Saved to Firestore with ID:', docRef.id);
 
-      // After successful upload, update limits
-      const userRef = doc(db, 'users', auth.currentUser.uid);
-      await incrementUploadCount('pdf');
+      // Update usage count after successful upload
+      await incrementUploadCount('pdfUploads');
 
       setCurrentDocId(docRef.id);
       setProcessing(false);
@@ -477,16 +481,9 @@ const PDFUpload = () => {
 
   const handleGenerate = async (type) => {
     try {
-      setError(null);
-      // Check generation limit for this document
-      const canGenerate = await checkGenerationLimit(currentDocId);
-      if (!canGenerate) {
-        setError(`Generation limit reached for this document. Upgrade to Pro for more generations, If your already on pro, this limit will be lifted in the future update!`);
-        return;
-      }
-
       setGenerating(prev => ({ ...prev, [type]: true }));
-      
+      setError('');
+
       // Get the document content
       const docRef = doc(db, 'pdf-contents', currentDocId);
       const docSnap = await getDoc(docRef);
@@ -494,7 +491,7 @@ const PDFUpload = () => {
       if (!docSnap.exists()) {
         throw new Error('Document not found');
       }
-      
+
       const content = docSnap.data().content;
       if (!content) {
         throw new Error('No content available to process');
@@ -509,15 +506,12 @@ const PDFUpload = () => {
           generatedAt: new Date()
         }
       });
-      
+
       setGeneratedContent(prev => ({
         ...prev,
         [type]: result
       }));
       setSuccessMessage(`${type.charAt(0).toUpperCase() + type.slice(1)} content generated successfully!`);
-
-      // Increment the generation count after successful generation
-      await incrementGenerationCount(currentDocId);
 
     } catch (error) {
       console.error('Error:', error);
@@ -534,47 +528,36 @@ const PDFUpload = () => {
   };
 
   const formatContent = (content, type) => {
-    console.log('Formatting content:', content, type);
-    if (!content) return [];
-    
-    const contentText = content.content || '';
-    console.log('Content text:', contentText);
-    
-    let sections;
-    if (type === 'twitter') {
-      sections = contentText.split(/\[POST\s*\d+\]/i)
-        .filter(section => section.trim());
-    } else if (type === 'tiktok') {
-      sections = contentText.split(/\[CONCEPT\s*\d+\]/i)
-        .filter(section => section.trim());
-    } else if (type === 'youtube') {
-      sections = contentText.split(/\[VIDEO\s*\d+\]/i)
-        .filter(section => section.trim())
-        .filter(section => {
-          // Skip the introduction text and empty sections
-          const cleaned = section.toLowerCase().trim();
-          return !cleaned.includes('here are') && 
-                 !cleaned.includes('youtube video ideas') && 
-                 section.includes('Title:');
-        });
-    }
-    
-    console.log('Sections:', sections);
-    return sections.map(section => {
-      const lines = section.trim().split('\n');
-      if (type === 'twitter') {
-        return { content: lines.join('\n').trim() };
-      }
+    try {
+      if (!content || !content.content) return [];
       
-      const item = {};
-      lines.forEach(line => {
-        const [key, ...value] = line.split(':');
-        if (key && value.length) {
-          item[key.trim().toLowerCase()] = value.join(':').trim();
-        }
-      });
-      return item;
-    });
+      const contentText = content.content;
+      
+      if (type === 'twitter') {
+        const posts = contentText.split(/\[POST\s*\d+\]/i)
+          .filter(post => post.trim())
+          .map(post => ({ content: post.trim() }));
+        return posts;
+      } else {
+        const items = contentText.split(/\[(CONCEPT|VIDEO)\s*\d+\]/i)
+          .filter(item => item.trim())
+          .map(item => {
+            const lines = item.trim().split('\n');
+            const formattedItem = {};
+            lines.forEach(line => {
+              const [key, ...value] = line.split(':');
+              if (key && value.length) {
+                formattedItem[key.trim().toLowerCase()] = value.join(':').trim();
+              }
+            });
+            return formattedItem;
+          });
+        return items;
+      }
+    } catch (error) {
+      console.error('Error formatting content:', error);
+      return [];
+    }
   };
 
   const handleCopy = (text) => {
@@ -587,7 +570,8 @@ const PDFUpload = () => {
       setError(null);
       setSuccessMessage('');
 
-      const canUpload = await checkUploadLimit('website');
+      // Check upload limit
+      const canUpload = await checkUploadLimit('websiteUploads');
       if (!canUpload) {
         setError('Daily website link limit reached. Upgrade to Pro for more uploads!');
         return;
@@ -614,8 +598,8 @@ const PDFUpload = () => {
         status: 'uploaded'
       });
 
-      // Increment website upload counter
-      await incrementUploadCount('website');
+      // Update usage count after successful upload
+      await incrementUploadCount('websiteUploads');
 
       setCurrentDocId(docRef.id);
       setSuccessMessage('URL uploaded successfully!');

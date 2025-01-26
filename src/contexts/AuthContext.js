@@ -19,17 +19,6 @@ const createInitialUserData = (email) => ({
   email,
   subscription: 'free',
   createdAt: new Date(),
-  limits: {
-    pdfUploads: {
-      used: 0,
-      limit: 2
-    },
-    websiteUploads: {
-      used: 0,
-      limit: 1
-    },
-  },
-  generationsPerUpload: 1,
   stripeCustomerId: null,
   stripeSubscriptionId: null
 });
@@ -63,17 +52,6 @@ export function AuthProvider({ children }) {
         email: result.user.email,
         subscription: 'free',
         createdAt: new Date(),
-        limits: {
-          pdfUploads: {
-            used: 0,
-            limit: 2
-          },
-          websiteUploads: {
-            used: 0,
-            limit: 1
-          },
-        },
-        generationsPerUpload: 1,
         stripeCustomerId: null,
         stripeSubscriptionId: null
       }, { merge: true });

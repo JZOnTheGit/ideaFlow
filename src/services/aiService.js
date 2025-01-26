@@ -1,5 +1,3 @@
-import { rateLimit } from '../utils/rateLimiter';
-
 const COHERE_API_KEY = process.env.REACT_APP_COHERE_API_KEY;
 const COHERE_API_URL = 'https://api.cohere.ai/v1/generate';
 
@@ -39,28 +37,7 @@ const generatePrompts = {
     Key Points: • Point 1
                 • Point 2
                 • Point 3
-    Hashtags: #viral #trending #relevant
-
-    [CONCEPT 2]
-    Title: {title}
-    Hook: {hook}
-    Description: {description}
-    Key Points: {points}
-    Hashtags: {hashtags}
-
-    [CONCEPT 3]
-    Title: {title}
-    Hook: {hook}
-    Description: {description}
-    Key Points: {points}
-    Hashtags: {hashtags}
-
-    [CONCEPT 4]
-    Title: {title}
-    Hook: {hook}
-    Description: {description}
-    Key Points: {points}
-    Hashtags: {hashtags}`,
+    Hashtags: #viral #trending #relevant`,
     model: 'command',
     temperature: 0.8,
     max_tokens: 1000,
@@ -82,28 +59,7 @@ const generatePrompts = {
                 • Main point 2
                 • Main point 3
     Target Audience: Specific target audience
-    Duration: Suggested length
-
-    [VIDEO 2]
-    Title: {title}
-    Description: {description}
-    Key Points: {points}
-    Target Audience: {audience}
-    Duration: {duration}
-
-    [VIDEO 3]
-    Title: {title}
-    Description: {description}
-    Key Points: {points}
-    Target Audience: {audience}
-    Duration: {duration}
-
-    [VIDEO 4]
-    Title: {title}
-    Description: {description}
-    Key Points: {points}
-    Target Audience: {audience}
-    Duration: {duration}`,
+    Duration: Suggested length`,
     model: 'command',
     temperature: 0.8,
     max_tokens: 1000,
@@ -115,27 +71,20 @@ const generatePrompts = {
 
 export const generateContent = async (content, type) => {
   try {
-    // Add request validation
     if (!content) {
-      throw new Error('Content is too short to generate ideas');
+      throw new Error('Content is required');
     }
 
     if (content.length > 100000) {
       throw new Error('Content is too long. Please upload a shorter document');
     }
 
-    console.log('Generating content for:', type);
-    
-    const prompt = generatePrompts[type];
-    if (!prompt) {
+    if (!generatePrompts[type]) {
       throw new Error(`Invalid content type: ${type}`);
     }
-    const requestBody = prompt(content);
-    console.log('Request body:', requestBody);
 
-    if (!COHERE_API_KEY) {
-      throw new Error('API key is not configured');
-    }
+    const requestBody = generatePrompts[type](content);
+    console.log('Request body:', requestBody);
 
     const response = await fetch(COHERE_API_URL, {
       method: 'POST',
@@ -147,18 +96,15 @@ export const generateContent = async (content, type) => {
       body: JSON.stringify(requestBody)
     });
 
-    console.log('Response status:', response.status);
-
-    const data = await response.json();
-    console.log('API Response:', data);
-
     if (!response.ok) {
       if (response.status === 401) {
         throw new Error('Invalid API key. Please check your Cohere API key configuration.');
       }
-      throw new Error(data.message || 'Failed to generate content');
+      throw new Error('Failed to generate content');
     }
 
+    const data = await response.json();
+    
     if (!data.generations || !data.generations[0]) {
       throw new Error('No content generated');
     }
