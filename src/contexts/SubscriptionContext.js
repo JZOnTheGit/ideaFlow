@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { auth, db } from '../firebase/firebase';
 import { doc, onSnapshot, setDoc, getDoc, updateDoc, increment, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { loadStripe } from '@stripe/stripe-js';
 
 // Create the context
 const SubscriptionContext = createContext({
@@ -23,6 +24,7 @@ export function useSubscriptionContext() {
 export function SubscriptionProvider({ children }) {
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const plans = [
     {
@@ -190,6 +192,60 @@ export function SubscriptionProvider({ children }) {
     }
   };
 
+  const handleSubscribe = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      if (!auth.currentUser) {
+        throw new Error('You must be logged in to subscribe');
+      }
+
+      const response = await fetch('https://idea-flow-server.vercel.app/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await auth.currentUser.getIdToken()}`
+        },
+        body: JSON.stringify({
+          userId: auth.currentUser.uid,
+          email: auth.currentUser.email,
+          priceId: process.env.REACT_APP_STRIPE_PRICE_ID,
+          successUrl: `${window.location.origin}/dashboard?success=true`,
+          cancelUrl: `${window.location.origin}/dashboard?canceled=true`
+        })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to create checkout session');
+      }
+
+      const { sessionId } = await response.json();
+      
+      // Initialize Stripe
+      const stripe = await loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
+      
+      if (!stripe) {
+        throw new Error('Failed to load Stripe');
+      }
+
+      // Redirect to Checkout
+      const { error } = await stripe.redirectToCheckout({
+        sessionId
+      });
+
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error('Subscription error:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value = {
     subscription,
     loading,
@@ -198,7 +254,8 @@ export function SubscriptionProvider({ children }) {
     incrementUploadCount,
     checkGenerationLimit,
     incrementGenerationCount,
-    checkRateLimit
+    checkRateLimit,
+    handleSubscribe
   };
 
   return (
