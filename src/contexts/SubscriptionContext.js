@@ -75,6 +75,7 @@ export const SubscriptionProvider = ({ children }) => {
     const unsubscribe = onSnapshot(userRef, (doc) => {
       if (doc.exists()) {
         const userData = doc.data();
+        console.log('Subscription data updated:', userData);
         const isProUser = userData.subscription === 'pro';
         
         setSubscription({
@@ -89,13 +90,14 @@ export const SubscriptionProvider = ({ children }) => {
               used: userData.limits?.websiteUploads?.used || 0,
               limit: isProUser ? 50 : 1
             }
-          }
+          },
+          stripeSubscriptionId: userData.stripeSubscriptionId,
+          stripeCustomerId: userData.stripeCustomerId
         });
       }
       setLoading(false);
     });
 
-    unsubscribeRef.current = unsubscribe;
     return () => unsubscribe();
   }, []);
 
@@ -130,11 +132,24 @@ export const SubscriptionProvider = ({ children }) => {
       if (!auth.currentUser) return;
       const userRef = doc(db, 'users', auth.currentUser.uid);
       
+      // Get current user data
+      const docSnap = await getDoc(userRef);
+      if (!docSnap.exists()) return;
+      
+      const userData = docSnap.data();
+      const currentLimits = userData.limits || {};
+      
       await updateDoc(userRef, {
-        [`limits.${type}.used`]: increment(1)
+        limits: {
+          ...currentLimits,
+          [type]: {
+            used: (currentLimits[type]?.used || 0) + 1,
+            limit: currentLimits[type]?.limit || (type === 'pdfUploads' ? 2 : 1)
+          }
+        }
       });
 
-      // Update local state to reflect the new count
+      // Update local state
       setSubscription(prev => ({
         ...prev,
         limits: {
@@ -145,7 +160,6 @@ export const SubscriptionProvider = ({ children }) => {
           }
         }
       }));
-
     } catch (error) {
       console.error('Error incrementing upload count:', error);
       throw error;
