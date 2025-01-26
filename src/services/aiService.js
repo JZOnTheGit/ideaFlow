@@ -1,5 +1,4 @@
 import { rateLimit } from '../utils/rateLimiter';
-import { auth } from '../firebase/firebase';
 
 const COHERE_API_KEY = process.env.REACT_APP_COHERE_API_KEY;
 const COHERE_API_URL = 'https://api.cohere.ai/v1/generate';
@@ -116,34 +115,29 @@ const generatePrompts = {
 
 export const generateContent = async (content, type) => {
   try {
-    // First check rate limit with backend
-    const response = await fetch('https://idea-flow-server.vercel.app/check-rate-limit', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        userId: auth.currentUser.uid
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error('Rate limit check failed');
+    // Add request validation
+    if (!content) {
+      throw new Error('Content is too short to generate ideas');
     }
 
-    // Then generate content using Cohere API directly
+    if (content.length > 100000) {
+      throw new Error('Content is too long. Please upload a shorter document');
+    }
+
+    console.log('Generating content for:', type);
+    
     const prompt = generatePrompts[type];
     if (!prompt) {
       throw new Error(`Invalid content type: ${type}`);
     }
     const requestBody = prompt(content);
-    console.log('Using API key:', COHERE_API_KEY); // Debug line
+    console.log('Request body:', requestBody);
 
     if (!COHERE_API_KEY) {
       throw new Error('API key is not configured');
     }
 
-    const cohereResponse = await fetch(COHERE_API_URL, {
+    const response = await fetch(COHERE_API_URL, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${COHERE_API_KEY}`,
@@ -153,10 +147,20 @@ export const generateContent = async (content, type) => {
       body: JSON.stringify(requestBody)
     });
 
-    const data = await cohereResponse.json();
+    console.log('Response status:', response.status);
 
-    if (!cohereResponse.ok) {
+    const data = await response.json();
+    console.log('API Response:', data);
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Invalid API key. Please check your Cohere API key configuration.');
+      }
       throw new Error(data.message || 'Failed to generate content');
+    }
+
+    if (!data.generations || !data.generations[0]) {
+      throw new Error('No content generated');
     }
 
     return {

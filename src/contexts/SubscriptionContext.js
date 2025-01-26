@@ -1,18 +1,9 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { auth, db } from '../firebase/firebase';
 import { doc, onSnapshot, setDoc, getDoc, updateDoc, increment, runTransaction, serverTimestamp } from 'firebase/firestore';
-import { loadStripe } from '@stripe/stripe-js';
 
-// Create the context
-const SubscriptionContext = createContext({
-  subscription: null,
-  loading: true,
-  checkUploadLimit: async () => {},
-  checkRateLimit: async () => {},
-  incrementUploadCount: async () => {},
-});
+const SubscriptionContext = createContext();
 
-// Custom hook to use the subscription context
 export function useSubscriptionContext() {
   const context = useContext(SubscriptionContext);
   if (!context) {
@@ -21,10 +12,23 @@ export function useSubscriptionContext() {
   return context;
 }
 
+export { SubscriptionContext };
+
+export function useSubscription() {
+  return useSubscriptionContext();
+}
+
 export function SubscriptionProvider({ children }) {
-  const [subscription, setSubscription] = useState(null);
+  const [subscription, setSubscription] = useState({
+    status: 'free',
+    isActive: false,
+    limits: {
+      pdfUploads: { used: 0, limit: 2 },
+      websiteUploads: { used: 0, limit: 1 }
+    }
+  });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const unsubscribeRef = useRef();
 
   const plans = [
     {
@@ -54,62 +58,102 @@ export function SubscriptionProvider({ children }) {
 
   useEffect(() => {
     if (!auth.currentUser) {
-      setSubscription(null);
+      // Reset subscription state when user logs out
+      setSubscription({
+        status: 'free',
+        isActive: false,
+        limits: {
+          pdfUploads: { used: 0, limit: 2 },
+          websiteUploads: { used: 0, limit: 1 }
+        }
+      });
       setLoading(false);
       return;
     }
 
-    const userRef = doc(db, 'users', auth.currentUser.uid);
+    let isMounted = true;
 
-    const unsubscribe = onSnapshot(userRef, async (doc) => {
-      if (!doc.exists()) {
-        // Initialize new user with free plan
-        await setDoc(userRef, {
-          userId: auth.currentUser.uid,
-          email: auth.currentUser.email,
-          subscription: 'free',
-          subscriptionStatus: 'inactive',
-          limits: {
-            pdfUploads: {
-              used: 0,
-              max: 3 // Free tier limit
-            }
-          },
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
+    const setupSubscription = async () => {
+      try {
+        const userRef = doc(db, 'users', auth.currentUser.uid);
+        
+        if (!isMounted) return;
+
+        // Clean up previous subscription if it exists
+        if (unsubscribeRef.current) {
+          unsubscribeRef.current();
+        }
+
+        // Set up real-time listener
+        unsubscribeRef.current = onSnapshot(userRef, (doc) => {
+          if (!doc.exists() || !isMounted) return;
+
+          const userData = doc.data();
+          
+          // Always use Firestore data for limits and status
+          setSubscription({
+            status: userData.subscription || 'free',
+            isActive: userData.subscriptionStatus === 'active',
+            limits: userData.limits || {
+              pdfUploads: { used: 0, limit: 2 },
+              websiteUploads: { used: 0, limit: 1 }
+            },
+            stripeCustomerId: userData.stripeCustomerId,
+            stripeSubscriptionId: userData.stripeSubscriptionId,
+            subscriptionStatus: userData.subscriptionStatus
+          });
+
+          setLoading(false);
+        }, (error) => {
+          console.error('Firestore subscription error:', error);
+          setLoading(false);
         });
-      } else {
-        setSubscription(doc.data());
-      }
-      setLoading(false);
-    });
 
-    return () => unsubscribe();
-  }, []);
+      } catch (error) {
+        console.error('Error setting up subscription:', error);
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    setupSubscription();
+
+    return () => {
+      isMounted = false;
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+      }
+    };
+  }, [auth.currentUser?.uid]);
 
   const checkUploadLimit = useCallback(async (type) => {
     if (!auth.currentUser) return false;
-
+    
+    // Always get fresh data from Firestore
     const userRef = doc(db, 'users', auth.currentUser.uid);
-    const userDoc = await getDoc(userRef);
-
-    if (!userDoc.exists()) return false;
-
-    const userData = userDoc.data();
-    const isPro = userData.subscription === 'pro' && userData.subscriptionStatus === 'active';
-    const limit = isPro ? 80 : 3; // Pro: 80, Free: 3
-    const used = userData.limits?.pdfUploads?.used || 0;
-
-    return used < limit;
+    const docSnap = await getDoc(userRef);
+    
+    if (!docSnap.exists()) return false;
+    
+    const userData = docSnap.data();
+    const limits = userData.limits || {
+      pdfUploads: { used: 0, limit: 2 },
+      websiteUploads: { used: 0, limit: 1 }
+    };
+    
+    const uploadType = type === 'pdf' ? 'pdfUploads' : 'websiteUploads';
+    return limits[uploadType].used < limits[uploadType].limit;
   }, []);
 
   const incrementUploadCount = useCallback(async (type) => {
     if (!auth.currentUser) return;
-
+    
     const userRef = doc(db, 'users', auth.currentUser.uid);
+    const uploadType = type === 'pdf' ? 'pdfUploads' : 'websiteUploads';
+    
     await updateDoc(userRef, {
-      'limits.pdfUploads.used': increment(1),
-      updatedAt: serverTimestamp()
+      [`limits.${uploadType}.used`]: increment(1)
     });
   }, []);
 
@@ -161,89 +205,8 @@ export function SubscriptionProvider({ children }) {
     }
   }, []);
 
-  const checkRateLimit = async (userId) => {
-    try {
-      const userRef = doc(db, 'users', userId);
-      const userDoc = await getDoc(userRef);
-      
-      if (!userDoc.exists()) {
-        throw new Error('User document does not exist');
-      }
-
-      const userData = userDoc.data();
-      const lastGeneration = userData.lastGeneration?.toDate() || new Date(0);
-      const now = new Date();
-      const timeDiff = now - lastGeneration;
-      const cooldown = userData.subscription === 'pro' ? 2000 : 3000; // 2s for pro, 3s for free
-
-      if (timeDiff < cooldown) {
-        throw new Error(`Please wait ${Math.ceil((cooldown - timeDiff) / 1000)} seconds before generating again`);
-      }
-
-      // Update last generation timestamp
-      await updateDoc(userRef, {
-        lastGeneration: serverTimestamp()
-      });
-
-      return true;
-    } catch (error) {
-      console.error('Rate limit check error:', error);
-      throw error;
-    }
-  };
-
-  const handleSubscribe = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      if (!auth.currentUser) {
-        throw new Error('You must be logged in to subscribe');
-      }
-
-      const response = await fetch('https://idea-flow-server.vercel.app/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await auth.currentUser.getIdToken()}`
-        },
-        body: JSON.stringify({
-          userId: auth.currentUser.uid,
-          email: auth.currentUser.email,
-          priceId: process.env.REACT_APP_STRIPE_PRICE_ID,
-          successUrl: `${window.location.origin}/dashboard?success=true`,
-          cancelUrl: `${window.location.origin}/dashboard?canceled=true`
-        })
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to create checkout session');
-      }
-
-      const { sessionId } = await response.json();
-      
-      // Initialize Stripe
-      const stripe = await loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
-      
-      if (!stripe) {
-        throw new Error('Failed to load Stripe');
-      }
-
-      // Redirect to Checkout
-      const { error } = await stripe.redirectToCheckout({
-        sessionId
-      });
-
-      if (error) {
-        throw error;
-      }
-    } catch (error) {
-      console.error('Subscription error:', error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
+  const incrementUsage = async (docId, type) => {
+    // Add your usage increment logic here
   };
 
   const value = {
@@ -253,9 +216,7 @@ export function SubscriptionProvider({ children }) {
     checkUploadLimit,
     incrementUploadCount,
     checkGenerationLimit,
-    incrementGenerationCount,
-    checkRateLimit,
-    handleSubscribe
+    incrementGenerationCount
   };
 
   return (
@@ -263,9 +224,4 @@ export function SubscriptionProvider({ children }) {
       {children}
     </SubscriptionContext.Provider>
   );
-}
-
-// Export the hook for using subscription
-export function useSubscription() {
-  return useSubscriptionContext();
 } 
