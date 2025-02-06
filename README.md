@@ -93,3 +93,33 @@ Copyright © 2024 IdeaFlow. All rights reserved.
 ---
 
 <p align="center">Made with ❤️ by the IdeaFlow Team</p>
+
+## 🚀 Getting Started
+
+### Environment Setup
+1. Copy `.env.example` to `.env`
+2. Fill in your environment variables
+3. For server setup, copy `ideaflow-server/.env.example` to `ideaflow-server/.env`
+4. Add your Firebase service account key to `ideaflow-server/serviceAccountKey.json`
+
+### Required Environment Variables
+The following environment variables are required to run the application:
+
+#### Frontend (.env)
+- REACT_APP_FIREBASE_* (Firebase configuration)
+- REACT_APP_STRIPE_* (Stripe public keys)
+- REACT_APP_COHERE_API_KEY (Cohere API key)
+
+#### Backend (ideaflow-server/.env)
+- STRIPE_SECRET_KEY
+- STRIPE_WEBHOOK_SECRET
+- FIREBASE_* (Firebase Admin SDK configuration)
+
+## 🔐 Security Notice
+
+Never commit sensitive environment files or API keys to the repository. The following files are ignored and should be kept secure:
+- All `.env` files
+- `serviceAccountKey.json`
+- Any files containing API keys or secrets
+
+Make sure to properly set up your environment variables in your deployment platform's settings.

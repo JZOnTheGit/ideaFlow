@@ -20,15 +20,24 @@ node_modules/.cache/
 /server
 /ideaflow-server
 
-# misc
-.DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Environment files
 .env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.example
+.env.*
+*/**/.env
+*/**/.env.*
 
-# OS generated files
+# Firebase and Service Account files
+**/serviceAccountKey.json
+**/firebase-credentials.json
+**/service-account*.json
+**/*-firebase-adminsdk-*.json
+
+# misc
 .DS_Store
 .DS_Store?
 ._*
@@ -37,6 +46,6 @@ node_modules/.cache/
 ehthumbs.db
 Thumbs.db
 
-# Service account files
-api/service-account.json
-api/serviceAccountKey.json
+# Logs
+*.log
+firebase-debug.log*
